@@ -3,682 +3,517 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>🍕 Fruit Ninja · Zombie Slayer</title>
+    <title>🧟 Slice of the Dead</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            user-select: none;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
         body {
-            background: #0b0f0c;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            overflow: hidden;
-            font-family: 'Segoe UI', 'Arial Black', system-ui, sans-serif;
+            background: #111; overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-            cursor: crosshair;
-            touch-action: none;
-        }
+        canvas { display: block; width: 100vw; height: 100vh; cursor: crosshair; touch-action: none; }
         .overlay {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            pointer-events: none;
-            text-align: center;
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.7); color: white; text-align: center;
         }
+        .hidden { display: none !important; }
+        h1 { font-size: 3rem; color: #ff4d4d; text-shadow: 2px 2px 0 #000; margin-bottom: 10px; }
+        p { font-size: 1.2rem; margin-bottom: 20px; color: #ccc; }
         .btn {
-            pointer-events: auto;
-            background: #2a4730;
-            border: 4px solid #7fa86b;
-            color: #e9f5d9;
-            font-size: 1.6rem;
-            font-weight: bold;
-            padding: 16px 42px;
-            border-radius: 60px;
-            letter-spacing: 2px;
-            box-shadow: 0 8px 0 #0e1a0f, 0 12px 30px rgba(0,0,0,0.8);
-            cursor: pointer;
-            transition: transform 0.1s, box-shadow 0.1s;
-            text-transform: uppercase;
-            font-family: inherit;
-            transform: translateY(0);
+            pointer-events: auto; background: #2a4730; border: 3px solid #7fa86b;
+            color: #e9f5d9; font-size: 1.5rem; font-weight: bold; padding: 15px 40px;
+            border-radius: 50px; cursor: pointer; text-transform: uppercase;
+            box-shadow: 0 6px 0 #0e1a0f; transition: transform 0.1s;
         }
-        .btn:active {
-            transform: translateY(6px);
-            box-shadow: 0 2px 0 #0e1a0f, 0 8px 20px black;
-        }
-        .btn:hover {
-            background: #3a5e3f;
-            border-color: #a5d18b;
-        }
-        .hidden {
-            display: none !important;
-        }
-        .gameover-text {
-            font-size: 3rem;
-            color: #e05a5a;
-            text-shadow: 0 0 20px darkred, 4px 4px 0 #2a0a0a;
-            margin-bottom: 30px;
-            letter-spacing: 4px;
-        }
-        .start-text {
-            font-size: 2.2rem;
-            color: #b1e6a0;
-            text-shadow: 0 0 25px #2d5a1e, 4px 4px 0 #0e1a0f;
-            margin-bottom: 40px;
-            letter-spacing: 3px;
-            font-weight: 900;
-        }
-        .hint {
-            margin-top: 30px;
-            color: #6d8f63;
-            font-size: 1rem;
-            letter-spacing: 2px;
-        }
+        .btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #0e1a0f; }
     </style>
 </head>
 <body>
-<canvas id="gameCanvas"></canvas>
+    <canvas id="gameCanvas"></canvas>
 
-<!-- UI overlays -->
-<div id="startScreen" class="overlay">
-    <div class="start-text">🧟 ZOMBIE<br>SLAYER</div>
-    <button id="startBtn" class="btn">TAP TO START</button>
-    <div class="hint">SLICE ZOMBIE HEADS</div>
-</div>
+    <div id="startScreen" class="overlay">
+        <h1>SLICE OF THE DEAD</h1>
+        <p>WASD / Arrows to Move<br>Click / Swipe to Slash</p>
+        <button id="startBtn" class="btn">START SURVIVING</button>
+    </div>
 
-<div id="gameOverScreen" class="overlay hidden">
-    <div class="gameover-text">GAME OVER</div>
-    <button id="retryBtn" class="btn">RETRY</button>
-</div>
+    <div id="gameOverScreen" class="overlay hidden">
+        <h1>YOU DIED</h1>
+        <p>Zombies Killed: <span id="finalScore">0</span></p>
+        <button id="retryBtn" class="btn">TRY AGAIN</button>
+    </div>
 
 <script>
-    (function(){
-        // ----- CANVAS SETUP -----
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        let width, height;
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // UI Elements
+    const startScreen = document.getElementById('startScreen');
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    const finalScore = document.getElementById('finalScore');
 
-        function resizeCanvas() {
-            width = window.innerWidth;
-            height = window.innerHeight;
-            canvas.width = width;
-            canvas.height = height;
-        }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
+    // Resize
+    let width, height;
+    function resize() {
+        width = window.innerWidth; height = window.innerHeight;
+        canvas.width = width; canvas.height = height;
+    }
+    window.addEventListener('resize', resize);
+    resize();
 
-        // ----- GAME STATE -----
-        let gameActive = false;
-        let score = 0;
-        let lives = 3;
-        let gameOverFlag = false;
+    // Game State
+    let gameActive = false;
+    let score = 0;
+    
+    // The Player
+    const player = {
+        x: width / 2, y: height / 2,
+        radius: 16,
+        speed: 4.5,
+        hp: 100,
+        attackCooldown: 0,
+        attackRadius: 75,
+        facing: { x: 0, y: 1 } // looking down by default
+    };
 
-        // ----- ARRAYS -----
-        let zombies = [];            // active zombie heads
-        let halves = [];             // sliced half circles (left/right)
-        let particles = [];          // blood splatters / small particles
-        let trail = [];              // swipe trail points {x, y, life}
+    // Arrays
+    let zombies = [];
+    let particles = [];
+    let bloodSplatters = []; // stays on the ground
+    let trail = []; // Slice trail
 
-        // ----- SWIPE / SLICE TRACKING -----
-        let isSwiping = false;
-        let lastMouse = { x: 0, y: 0 };
-        let currentMouse = { x: 0, y: 0 };
-        const SLICE_MIN_DIST = 18;    // minimum segment length for reliable slice
+    // Inputs
+    const keys = { w: false, a: false, s: false, d: false, up: false, down: false, left: false, right: false };
+    let mouse = { x: 0, y: 0, isDown: false };
 
-        // ----- SPAWN TIMING -----
-        let spawnTimer = 0;
-        const SPAWN_INTERVAL = 55;    // frames between spawns (approx 60fps)
-        const MAX_ZOMBIES = 8;        // prevent overcrowding
+    // Touch / Joystick
+    let touchStart = null;
+    let joystick = { active: false, dx: 0, dy: 0, originX: 0, originY: 0 };
 
-        // ----- GRAVITY & PHYSICS (pixels/frame^2) -----
-        const GRAVITY = 0.32;
-        const BOUNCE_FACTOR = 0.0;    // no bounce, heads fall off
+    // Config
+    const ZOMBIE_SPEED = 1.2;
+    const SPAWN_RATE = 90; // frames
+    let spawnTimer = 0;
 
-        // ----- RESET GAME -----
-        function resetGame() {
-            gameActive = false;
-            gameOverFlag = false;
-            score = 0;
-            lives = 3;
-            zombies = [];
-            halves = [];
-            particles = [];
-            trail = [];
-            isSwiping = false;
-            spawnTimer = 0;
-            // Show start screen, hide game over
-            document.getElementById('startScreen').classList.remove('hidden');
-            document.getElementById('gameOverScreen').classList.add('hidden');
-        }
+    // --- CORE FUNCTIONS ---
 
-        // ----- START GAME -----
-        function startGame() {
-            resetGame();
-            gameActive = true;
-            gameOverFlag = false;
-            document.getElementById('startScreen').classList.add('hidden');
-            document.getElementById('gameOverScreen').classList.add('hidden');
-            // initial small batch (3 zombies)
-            for (let i = 0; i < 3; i++) {
-                setTimeout(() => {
-                    if (gameActive) spawnZombie();
-                }, i * 120);
-            }
-        }
+    function resetGame() {
+        gameActive = true;
+        score = 0;
+        player.x = width / 2;
+        player.y = height / 2;
+        player.hp = 100;
+        player.attackCooldown = 0;
+        zombies = [];
+        particles = [];
+        bloodSplatters = [];
+        trail = [];
+        spawnTimer = 0;
+        
+        startScreen.classList.add('hidden');
+        gameOverScreen.classList.add('hidden');
+    }
 
-        // ----- GAME OVER -----
-        function triggerGameOver() {
-            if (gameOverFlag) return;
-            gameActive = false;
-            gameOverFlag = true;
-            document.getElementById('gameOverScreen').classList.remove('hidden');
-        }
+    function gameOver() {
+        gameActive = false;
+        finalScore.innerText = score;
+        gameOverScreen.classList.remove('hidden');
+    }
 
-        // ----- SPAWN ZOMBIE HEAD (arc trajectory) -----
-        function spawnZombie() {
-            if (!gameActive) return;
-            if (zombies.length >= MAX_ZOMBIES) return;
+    // --- ZOMBIES ---
 
-            const radius = 28 + Math.random() * 14;      // 28-42 px
-            const x = Math.random() * (width - 100) + 50;
-            const y = height + radius + 10;              // start below screen
-
-            // Arc: upward velocity, slight horizontal drift
-            const vx = (Math.random() - 0.5) * 4.5;      // -2.25 to 2.25
-            const vy = -10 - Math.random() * 5;          // -10 to -15
-
-            zombies.push({
-                x, y,
-                vx, vy,
-                radius,
-                // visual variation
-                hue: 80 + Math.random() * 30,            // greenish
-                eyeOffset: 0.2 + Math.random() * 0.3,
-            });
+    function spawnZombie() {
+        // Spawn on a random edge
+        let x, y;
+        if (Math.random() < 0.5) {
+            x = Math.random() < 0.5 ? -30 : width + 30;
+            y = Math.random() * height;
+        } else {
+            x = Math.random() * width;
+            y = Math.random() < 0.5 ? -30 : height + 30;
         }
 
-        // ----- LINE TO CIRCLE COLLISION (segment vs circle) -----
-        function lineCircleCollision(x1, y1, x2, y2, cx, cy, r) {
-            // Check if segment (x1,y1)-(x2,y2) intersects circle (cx,cy,r)
-            const dx = x2 - x1;
-            const dy = y2 - y1;
-            const lenSq = dx * dx + dy * dy;
-            if (lenSq === 0) {
-                // Point circle distance
-                const distSq = (cx - x1) ** 2 + (cy - y1) ** 2;
-                return distSq <= r * r;
-            }
+        zombies.push({
+            x, y,
+            radius: 14 + Math.random() * 6,
+            speed: ZOMBIE_SPEED + Math.random() * 0.5,
+            hue: 80 + Math.random() * 40,
+            angle: 0,
+            hitFlash: 0
+        });
+    }
 
-            // Parametric projection: t = ((C - A) · (B - A)) / |B-A|^2
-            let t = ((cx - x1) * dx + (cy - y1) * dy) / lenSq;
-            t = Math.max(0, Math.min(1, t));
+    function killZombie(index) {
+        const z = zombies[index];
+        score++;
+        
+        // Add blood splatter to the ground
+        bloodSplatters.push({
+            x: z.x, y: z.y,
+            radius: z.radius * (1.2 + Math.random()),
+            alpha: 0.8,
+            hue: z.hue
+        });
 
-            const projX = x1 + t * dx;
-            const projY = y1 + t * dy;
-
-            const distSq = (cx - projX) ** 2 + (cy - projY) ** 2;
-            return distSq <= r * r;
-        }
-
-        // ----- SLICE ZOMBIE -----
-        function sliceZombie(zombie, index) {
-            // remove from zombies
-            zombies.splice(index, 1);
-
-            // Add score
-            score += 10;
-
-            // Split into two halves
-            const r = zombie.radius;
-            const baseHue = zombie.hue || 95;
-            // left half: x offset, slightly rotated
-            halves.push({
-                x: zombie.x,
-                y: zombie.y,
-                vx: zombie.vx - 3.5 - Math.random() * 2,
-                vy: zombie.vy - 1.5 + Math.random() * 2,
-                radius: r,
-                angle: -0.3 + Math.random() * 0.6,
-                side: 'left',
-                hue: baseHue,
+        // Add flying particles
+        for (let i = 0; i < 15; i++) {
+            const a = Math.random() * Math.PI * 2;
+            const spd = 2 + Math.random() * 6;
+            particles.push({
+                x: z.x, y: z.y,
+                vx: Math.cos(a) * spd, vy: Math.sin(a) * spd,
+                radius: 2 + Math.random() * 4,
                 life: 1.0,
+                color: `hsl(${z.hue}, 70%, 40%)`
             });
-            // right half
-            halves.push({
-                x: zombie.x,
-                y: zombie.y,
-                vx: zombie.vx + 3.5 + Math.random() * 2,
-                vy: zombie.vy - 1.5 + Math.random() * 2,
-                radius: r,
-                angle: 0.3 + Math.random() * 0.6,
-                side: 'right',
-                hue: baseHue,
-                life: 1.0,
-            });
+        }
+        zombies.splice(index, 1);
+    }
 
-            // Blood splatter particles
-            const particleCount = 12 + Math.floor(Math.random() * 10);
-            for (let i = 0; i < particleCount; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const speed = 2 + Math.random() * 6;
-                particles.push({
-                    x: zombie.x,
-                    y: zombie.y,
-                    vx: Math.cos(angle) * speed + (Math.random() - 0.5) * 3,
-                    vy: Math.sin(angle) * speed + (Math.random() - 0.5) * 3 - 1.5,
-                    radius: 3 + Math.random() * 7,
-                    color: `hsl(${baseHue + Math.random() * 40 - 20}, 80%, 35%)`,
-                    life: 1.0,
-                    decay: 0.012 + Math.random() * 0.02,
-                });
-            }
+    // --- ATTACK ---
 
-            // Extra green goo particles
-            for (let i = 0; i < 8; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const speed = 1 + Math.random() * 4;
-                particles.push({
-                    x: zombie.x + (Math.random() - 0.5) * 20,
-                    y: zombie.y + (Math.random() - 0.5) * 20,
-                    vx: Math.cos(angle) * speed,
-                    vy: Math.sin(angle) * speed - 2,
-                    radius: 4 + Math.random() * 10,
-                    color: `hsl(${baseHue}, 70%, 45%)`,
-                    life: 0.9,
-                    decay: 0.015,
-                });
+    function attack() {
+        if (player.attackCooldown > 0 || !gameActive) return;
+        player.attackCooldown = 20; // ~0.3 seconds at 60fps
+
+        // Calculate attack area (a cone in front of player based on mouse/touch)
+        let attackAngle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
+        let attackArc = Math.PI / 1.5; // 120 degree swing
+        let hitSomething = false;
+
+        // Check collisions with zombies
+        for (let i = zombies.length - 1; i >= 0; i--) {
+            const z = zombies[i];
+            const dist = Math.hypot(z.x - player.x, z.y - player.y);
+            
+            if (dist < player.attackRadius + z.radius) {
+                // Check angle
+                let angleToZ = Math.atan2(z.y - player.y, z.x - player.x);
+                let angleDiff = Math.abs(attackAngle - angleToZ);
+                // Normalize angle difference
+                if (angleDiff > Math.PI) angleDiff = Math.PI * 2 - angleDiff;
+
+                if (angleDiff < attackArc / 2) {
+                    killZombie(i);
+                    hitSomething = true;
+                }
             }
         }
 
-        // ----- UPDATE GAME (physics, spawning, collisions, trail) -----
-        function updateGame() {
-            if (!gameActive) return;
+        // Add visual slash effect to particles
+        for(let i=0; i<10; i++) {
+            let spread = (Math.random() - 0.5) * attackArc;
+            let dist = player.attackRadius * (0.5 + Math.random() * 0.5);
+            particles.push({
+                x: player.x + Math.cos(attackAngle + spread) * dist,
+                y: player.y + Math.sin(attackAngle + spread) * dist,
+                vx: Math.cos(attackAngle) * 2,
+                vy: Math.sin(attackAngle) * 2,
+                radius: 3, life: 0.5,
+                color: '#fff'
+            });
+        }
+    }
 
-            // --- 1. SPAWN ZOMBIES ---
-            if (spawnTimer <= 0) {
-                spawnZombie();
-                spawnTimer = SPAWN_INTERVAL;
-            } else {
-                spawnTimer--;
-            }
+    // --- UPDATE LOOP ---
 
-            // --- 2. UPDATE ZOMBIES & CHECK SLICE COLLISIONS ---
-            for (let i = zombies.length - 1; i >= 0; i--) {
-                const z = zombies[i];
-                // physics
-                z.x += z.vx;
-                z.y += z.vy;
-                z.vy += GRAVITY;
+    function update() {
+        if (!gameActive) return;
 
-                // check if sliced by swipe trail
-                if (isSwiping && trail.length >= 2) {
-                    // Use latest segment (last two points of trail)
-                    const p1 = trail[trail.length - 2];
-                    const p2 = trail[trail.length - 1];
-                    const dx = p2.x - p1.x;
-                    const dy = p2.y - p1.y;
-                    const segLen = Math.hypot(dx, dy);
-                    if (segLen > SLICE_MIN_DIST) {
-                        if (lineCircleCollision(p1.x, p1.y, p2.x, p2.y, z.x, z.y, z.radius)) {
-                            sliceZombie(z, i);
-                            continue; // zombie removed, skip rest
-                        }
-                    }
-                }
+        // 1. Player Movement (Keyboard)
+        let moveX = 0, moveY = 0;
+        if (keys.w || keys.up) moveY -= 1;
+        if (keys.s || keys.down) moveY += 1;
+        if (keys.a || keys.left) moveX -= 1;
+        if (keys.d || keys.right) moveX += 1;
 
-                // remove if off-screen bottom (with margin)
-                if (z.y - z.radius > height + 100) {
-                    zombies.splice(i, 1);
-                    lives -= 1;
-                    if (lives <= 0) {
-                        lives = 0;
-                        triggerGameOver();
-                        return;
-                    }
-                }
-                // also remove if too far left/right (rare)
-                if (z.x < -200 || z.x > width + 200) {
-                    zombies.splice(i, 1);
-                }
-            }
-
-            // --- 3. UPDATE HALVES ---
-            for (let i = halves.length - 1; i >= 0; i--) {
-                const h = halves[i];
-                h.x += h.vx;
-                h.y += h.vy;
-                h.vy += GRAVITY * 0.9;
-                h.angle += (h.side === 'left' ? -0.04 : 0.04);
-                h.life -= 0.008;
-                // remove if off screen or faded
-                if (h.y - h.radius > height + 200 || h.x < -300 || h.x > width + 300 || h.life <= 0) {
-                    halves.splice(i, 1);
-                }
-            }
-
-            // --- 4. UPDATE PARTICLES ---
-            for (let i = particles.length - 1; i >= 0; i--) {
-                const p = particles[i];
-                p.x += p.vx;
-                p.y += p.vy;
-                p.vy += GRAVITY * 0.5;
-                p.vx *= 0.99;
-                p.life -= p.decay;
-                if (p.life <= 0.02 || p.y > height + 100) {
-                    particles.splice(i, 1);
-                }
-            }
-
-            // --- 5. UPDATE TRAIL (fade out points) ---
-            for (let i = trail.length - 1; i >= 0; i--) {
-                trail[i].life -= 0.03;
-                if (trail[i].life <= 0.0) {
-                    trail.splice(i, 1);
-                }
-            }
-            // Limit trail length (performance)
-            if (trail.length > 30) trail = trail.slice(-30);
+        // Player Movement (Joystick)
+        if (joystick.active) {
+            moveX += joystick.dx;
+            moveY += joystick.dy;
         }
 
-        // ----- DRAWING -----
-        function draw() {
-            // Background: dark with subtle vignette
-            ctx.clearRect(0, 0, width, height);
-            const grad = ctx.createRadialGradient(width/2, height/2, 100, width/2, height/2, Math.max(width, height)*0.8);
-            grad.addColorStop(0, '#1d2b1a');
-            grad.addColorStop(1, '#0a0f09');
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, width, height);
+        // Normalize diagonal movement
+        const len = Math.hypot(moveX, moveY);
+        if (len > 0) {
+            moveX /= len;
+            moveY /= len;
+            player.x += moveX * player.speed;
+            player.y += moveY * player.speed;
+        }
 
-            // Draw grid/dirt pattern (very subtle)
-            ctx.strokeStyle = '#2a3a24';
-            ctx.lineWidth = 0.5;
-            ctx.globalAlpha = 0.2;
-            for (let i = 0; i < width; i += 50) {
-                ctx.beginPath();
-                ctx.moveTo(i, 0);
-                ctx.lineTo(i, height);
-                ctx.stroke();
-            }
-            for (let i = 0; i < height; i += 50) {
-                ctx.beginPath();
-                ctx.moveTo(0, i);
-                ctx.lineTo(width, i);
-                ctx.stroke();
-            }
-            ctx.globalAlpha = 1.0;
+        // Keep player in bounds
+        player.x = Math.max(player.radius, Math.min(width - player.radius, player.x));
+        player.y = Math.max(player.radius, Math.min(height - player.radius, player.y));
 
-            // ----- DRAW HALVES (behind zombies) -----
-            halves.forEach(h => {
-                ctx.save();
-                ctx.translate(h.x, h.y);
-                ctx.rotate(h.angle);
-                ctx.shadowColor = '#4a7a3a';
-                ctx.shadowBlur = 16;
-                const halfGrad = ctx.createRadialGradient(-8, -8, 5, 0, 0, h.radius * 1.2);
-                halfGrad.addColorStop(0, `hsl(${h.hue}, 65%, 45%)`);
-                halfGrad.addColorStop(1, `hsl(${h.hue}, 70%, 25%)`);
-                ctx.fillStyle = halfGrad;
-                ctx.beginPath();
-                if (h.side === 'left') {
-                    ctx.arc(0, 0, h.radius, Math.PI * 0.5, Math.PI * 1.5);
-                } else {
-                    ctx.arc(0, 0, h.radius, Math.PI * 1.5, Math.PI * 0.5);
-                }
-                ctx.closePath();
-                ctx.fill();
-                // inner darkness / brain texture
-                ctx.shadowBlur = 0;
-                ctx.fillStyle = `hsl(${h.hue}, 60%, 18%)`;
-                ctx.beginPath();
-                ctx.arc(h.side === 'left' ? -6 : 6, -4, h.radius * 0.3, 0, Math.PI * 2);
-                ctx.fill();
-                // eye-like spots
-                ctx.fillStyle = '#1a1a1a';
-                ctx.beginPath();
-                ctx.arc(h.side === 'left' ? -10 : 10, -12, 5, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = '#d44';
-                ctx.beginPath();
-                ctx.arc(h.side === 'left' ? -10 : 10, -12, 2, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
-            });
+        // Update facing direction based on mouse
+        if (!joystick.active) {
+            player.facing.x = mouse.x - player.x;
+            player.facing.y = mouse.y - player.y;
+        } else {
+            player.facing.x = joystick.dx;
+            player.facing.y = joystick.dy;
+        }
 
-            // ----- DRAW ZOMBIE HEADS -----
-            zombies.forEach(z => {
-                ctx.save();
-                ctx.shadowColor = '#3c6e2e';
-                ctx.shadowBlur = 22;
-                // Main head
-                const grad = ctx.createRadialGradient(z.x-10, z.y-12, 6, z.x, z.y, z.radius * 1.3);
-                grad.addColorStop(0, `hsl(${z.hue}, 75%, 55%)`);
-                grad.addColorStop(1, `hsl(${z.hue}, 80%, 28%)`);
-                ctx.fillStyle = grad;
-                ctx.beginPath();
-                ctx.arc(z.x, z.y, z.radius, 0, Math.PI * 2);
-                ctx.fill();
+        // 2. Attack Cooldowns
+        if (player.attackCooldown > 0) player.attackCooldown--;
+        if (mouse.isDown) attack(); // Hold to auto-swing
 
-                // Zombie eyes (red/black)
-                ctx.shadowBlur = 8;
-                ctx.fillStyle = '#1a1a1a';
-                ctx.beginPath();
-                ctx.arc(z.x - z.radius*0.28, z.y - z.radius*0.2, z.radius*0.18, 0, Math.PI*2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(z.x + z.radius*0.28, z.y - z.radius*0.2, z.radius*0.18, 0, Math.PI*2);
-                ctx.fill();
-                // Red pupils
-                ctx.fillStyle = '#d32f2f';
-                ctx.shadowBlur = 12;
-                ctx.beginPath();
-                ctx.arc(z.x - z.radius*0.28, z.y - z.radius*0.2, z.radius*0.08, 0, Math.PI*2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(z.x + z.radius*0.28, z.y - z.radius*0.2, z.radius*0.08, 0, Math.PI*2);
-                ctx.fill();
+        // 3. Spawning
+        spawnTimer--;
+        if (spawnTimer <= 0) {
+            spawnZombie();
+            // Spawn faster as score goes up
+            spawnTimer = Math.max(20, SPAWN_RATE - Math.floor(score / 5) * 5);
+        }
 
-                // Mouth / stitches
-                ctx.shadowBlur = 0;
-                ctx.strokeStyle = '#3b1e1e';
-                ctx.lineWidth = 2.5;
-                ctx.beginPath();
-                ctx.arc(z.x, z.y + z.radius*0.2, z.radius*0.4, 0.1, Math.PI - 0.1);
-                ctx.stroke();
-                // teeth
-                ctx.fillStyle = '#ddd';
-                for (let i = -2; i <= 2; i++) {
-                    ctx.beginPath();
-                    ctx.rect(z.x + i * 10 - 3, z.y + z.radius*0.1, 5, 8);
-                    ctx.fill();
-                }
-
-                // top hair / scar
-                ctx.fillStyle = '#1e3a1e';
-                ctx.beginPath();
-                ctx.ellipse(z.x - 6, z.y - z.radius*0.7, 6, 10, 0.3, 0, Math.PI*2);
-                ctx.fill();
-                ctx.restore();
-            });
-
-            // ----- DRAW PARTICLES -----
-            particles.forEach(p => {
-                ctx.globalAlpha = Math.max(0, p.life);
-                ctx.fillStyle = p.color;
-                ctx.shadowColor = p.color;
-                ctx.shadowBlur = 12;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.radius * p.life, 0, Math.PI * 2);
-                ctx.fill();
-            });
-            ctx.globalAlpha = 1.0;
-            ctx.shadowBlur = 0;
-
-            // ----- DRAW SWIPE TRAIL (glowing green) -----
-            if (trail.length > 1) {
-                ctx.save();
-                ctx.shadowColor = '#b1ff8b';
-                ctx.shadowBlur = 22;
-                for (let i = 0; i < trail.length - 1; i++) {
-                    const t1 = trail[i];
-                    const t2 = trail[i+1];
-                    const alpha = Math.min(t1.life, 1.0) * 0.9;
-                    if (alpha <= 0.02) continue;
-                    ctx.strokeStyle = `rgba(180, 255, 120, ${alpha})`;
-                    ctx.lineWidth = 12 * (i / trail.length) + 2;
-                    ctx.lineCap = 'round';
-                    ctx.beginPath();
-                    ctx.moveTo(t1.x, t1.y);
-                    ctx.lineTo(t2.x, t2.y);
-                    ctx.stroke();
-                }
-                // extra glow dots on latest point
-                if (trail.length > 0) {
-                    const last = trail[trail.length-1];
-                    ctx.shadowBlur = 35;
-                    ctx.fillStyle = '#d4ffb0';
-                    ctx.beginPath();
-                    ctx.arc(last.x, last.y, 10, 0, Math.PI*2);
-                    ctx.fill();
-                }
-                ctx.restore();
+        // 4. Zombie Logic
+        for (let i = zombies.length - 1; i >= 0; i--) {
+            const z = zombies[i];
+            
+            // Move towards player
+            const dx = player.x - z.x;
+            const dy = player.y - z.y;
+            const dist = Math.hypot(dx, dy);
+            
+            if (dist > 0) {
+                z.x += (dx / dist) * z.speed;
+                z.y += (dy / dist) * z.speed;
+                z.angle = Math.atan2(dy, dx);
             }
 
-            // ----- HUD (score & lives) -----
+            if (z.hitFlash > 0) z.hitFlash--;
+
+            // Hit player
+            if (dist < player.radius + z.radius) {
+                player.hp -= 0.5; // Damage per frame while touching
+                z.x -= (dx / dist) * 2; // Push zombie back slightly
+                z.y -= (dy / dist) * 2;
+                
+                if (player.hp <= 0) {
+                    player.hp = 0;
+                    gameOver();
+                    return;
+                }
+            }
+        }
+
+        // 5. Particles
+        for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            p.x += p.vx; p.y += p.vy;
+            p.vx *= 0.9; p.vy *= 0.9;
+            p.life -= 0.05;
+            if (p.life <= 0) particles.splice(i, 1);
+        }
+
+        // 6. Fade Blood Splatters
+        for (let i = bloodSplatters.length - 1; i >= 0; i--) {
+            bloodSplatters[i].alpha -= 0.002;
+            if (bloodSplatters[i].alpha <= 0) bloodSplatters.splice(i, 1);
+        }
+    }
+
+    // --- DRAWING ---
+
+    function draw() {
+        // Clear background
+        ctx.fillStyle = '#1e221c';
+        ctx.fillRect(0, 0, width, height);
+
+        // Draw grid floor
+        ctx.strokeStyle = '#2a3326';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < width; i += 60) {
+            ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, height); ctx.stroke();
+        }
+        for (let i = 0; i < height; i += 60) {
+            ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(width, i); ctx.stroke();
+        }
+
+        // Draw Blood Splatters (on ground)
+        bloodSplatters.forEach(b => {
+            ctx.fillStyle = `hsla(${b.hue}, 70%, 30%, ${b.alpha})`;
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        // Draw Particles
+        particles.forEach(p => {
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = p.life;
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.fill();
+        });
+        ctx.globalAlpha = 1;
+
+        // Draw Zombies
+        zombies.forEach(z => {
             ctx.save();
-            ctx.shadowBlur = 0;
-            ctx.font = 'bold 36px "Segoe UI", "Arial Black", sans-serif';
-            ctx.fillStyle = '#d4f0c0';
-            ctx.shadowColor = '#2f4a1e';
-            ctx.shadowBlur = 12;
-            ctx.textAlign = 'left';
-            ctx.fillText(`⚡${score}`, 30, 70);
-            // Lives (hearts)
-            ctx.textAlign = 'right';
-            let heartStr = '';
-            for (let i = 0; i < lives; i++) heartStr += '❤️';
-            if (lives === 0) heartStr = '💀';
-            ctx.font = 'bold 38px "Segoe UI", sans-serif';
-            ctx.fillStyle = '#ff7b7b';
-            ctx.fillText(heartStr, width - 40, 70);
+            ctx.translate(z.x, z.y);
+            ctx.rotate(z.angle);
+            
+            // Zombie Body
+            ctx.fillStyle = `hsl(${z.hue}, 60%, 40%)`;
+            ctx.beginPath(); ctx.arc(0, 0, z.radius, 0, Math.PI * 2); ctx.fill();
+            
+            // Zombie Eyes (Red glowing)
+            ctx.fillStyle = '#ff3333';
+            ctx.shadowColor = '#ff0000'; ctx.shadowBlur = 8;
+            ctx.beginPath(); ctx.arc(z.radius*0.4, -z.radius*0.3, 2.5, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(z.radius*0.4, z.radius*0.3, 2.5, 0, Math.PI*2); ctx.fill();
+            
+            ctx.restore();
+        });
+
+        // Draw Player
+        ctx.save();
+        ctx.translate(player.x, player.y);
+        
+        // Player direction indicator (where they are looking)
+        ctx.rotate(Math.atan2(player.facing.y, player.facing.x));
+        
+        // Body
+        ctx.fillStyle = '#4a90e2';
+        ctx.shadowColor = '#4a90e2'; ctx.shadowBlur = 10;
+        ctx.beginPath(); ctx.arc(0, 0, player.radius, 0, Math.PI * 2); ctx.fill();
+        
+        // Weapon (Cleaver)
+        ctx.fillStyle = '#ccc';
+        ctx.fillRect(player.radius - 5, -4, 20, 8);
+        
+        ctx.restore();
+
+        // Draw Attack Slash Effect
+        if (player.attackCooldown > 10) {
+            ctx.save();
+            ctx.translate(player.x, player.y);
+            let atkAngle = Math.atan2(player.facing.y, player.facing.x);
+            ctx.rotate(atkAngle);
+            
+            ctx.beginPath();
+            ctx.arc(0, 0, player.attackRadius, -Math.PI/3, Math.PI/3);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.lineWidth = 8;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+            
             ctx.restore();
         }
 
-        // ----- GAME LOOP -----
-        function gameLoop() {
-            if (gameActive) {
-                updateGame();
-            }
-            draw();
-            requestAnimationFrame(gameLoop);
+        // Draw Touch Joystick
+        if (joystick.active) {
+            ctx.beginPath();
+            ctx.arc(joystick.originX, joystick.originY, 40, 0, Math.PI*2);
+            ctx.fillStyle = 'rgba(255,255,255,0.1)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(joystick.originX + joystick.dx * 40, joystick.originY + joystick.dy * 40, 20, 0, Math.PI*2);
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.fill();
         }
 
-        // ----- INPUT HANDLING (Mouse + Touch) -----
-        function getCanvasCoords(e) {
-            const rect = canvas.getBoundingClientRect();
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
-            let clientX, clientY;
-            if (e.touches) {
-                clientX = e.touches[0].clientX;
-                clientY = e.touches[0].clientY;
-            } else {
-                clientX = e.clientX;
-                clientY = e.clientY;
-            }
-            return {
-                x: (clientX - rect.left) * scaleX,
-                y: (clientY - rect.top) * scaleY
-            };
+        // --- HUD ---
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 24px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText(`KILLS: ${score}`, 20, 40);
+
+        // Health Bar
+        ctx.fillStyle = '#333';
+        ctx.fillRect(20, 60, 200, 20);
+        ctx.fillStyle = '#e74c3c';
+        ctx.fillRect(20, 60, Math.max(0, (player.hp / 100) * 200), 20);
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(20, 60, 200, 20);
+    }
+
+    function gameLoop() {
+        update();
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
+
+    // --- INPUT HANDLING ---
+
+    // Keyboard
+    window.addEventListener('keydown', e => {
+        if (e.key === 'w' || e.key === 'ArrowUp') keys.w = keys.up = true;
+        if (e.key === 's' || e.key === 'ArrowDown') keys.s = keys.down = true;
+        if (e.key === 'a' || e.key === 'ArrowLeft') keys.a = keys.left = true;
+        if (e.key === 'd' || e.key === 'ArrowRight') keys.d = keys.right = true;
+        if (e.key === ' ') attack();
+    });
+    window.addEventListener('keyup', e => {
+        if (e.key === 'w' || e.key === 'ArrowUp') keys.w = keys.up = false;
+        if (e.key === 's' || e.key === 'ArrowDown') keys.s = keys.down = false;
+        if (e.key === 'a' || e.key === 'ArrowLeft') keys.a = keys.left = false;
+        if (e.key === 'd' || e.key === 'ArrowRight') keys.d = keys.right = false;
+    });
+
+    // Mouse
+    canvas.addEventListener('mousemove', e => {
+        mouse.x = e.clientX;
+        mouse.y = e.clientY;
+    });
+    canvas.addEventListener('mousedown', e => {
+        mouse.isDown = true;
+        mouse.x = e.clientX;
+        mouse.y = e.clientY;
+        attack();
+    });
+    window.addEventListener('mouseup', () => mouse.isDown = false);
+
+    // Touch (Joystick + Swipe)
+    canvas.addEventListener('touchstart', e => {
+        e.preventDefault();
+        const t = e.changedTouches[0];
+        
+        // If touching left side of screen, start joystick
+        if (t.clientX < width / 2 && !joystick.active) {
+            joystick.active = true;
+            joystick.originX = t.clientX;
+            joystick.originY = t.clientY;
+            joystick.dx = 0; joystick.dy = 0;
+        } else {
+            // Right side: Attack
+            mouse.x = t.clientX;
+            mouse.y = t.clientY;
+            attack();
         }
+    }, { passive: false });
 
-        function handlePointerDown(e) {
-            e.preventDefault();
-            if (!gameActive) return;
-            isSwiping = true;
-            const pos = getCanvasCoords(e);
-            lastMouse = { x: pos.x, y: pos.y };
-            currentMouse = { x: pos.x, y: pos.y };
-            // start trail with a fresh point
-            trail.push({ x: pos.x, y: pos.y, life: 1.0 });
-            if (trail.length > 30) trail.shift();
+    canvas.addEventListener('touchmove', e => {
+        e.preventDefault();
+        const t = e.changedTouches[0];
+        if (joystick.active) {
+            let dx = t.clientX - joystick.originX;
+            let dy = t.clientY - joystick.originY;
+            let dist = Math.hypot(dx, dy);
+            if (dist > 50) dist = 50; // clamp joystick
+            
+            joystick.dx = dx / 50;
+            joystick.dy = dy / 50;
         }
+    }, { passive: false });
 
-        function handlePointerMove(e) {
-            e.preventDefault();  // prevent scrolling on touchmove
-            if (!gameActive) return;
-            const pos = getCanvasCoords(e);
-            currentMouse = { x: pos.x, y: pos.y };
-            if (isSwiping) {
-                // Add to trail only if moved enough (reduce noise)
-                const dx = pos.x - lastMouse.x;
-                const dy = pos.y - lastMouse.y;
-                if (Math.hypot(dx, dy) > 4) {
-                    trail.push({ x: pos.x, y: pos.y, life: 1.0 });
-                    if (trail.length > 30) trail.shift();
-                    lastMouse = { x: pos.x, y: pos.y };
-                }
-            } else {
-                // optional: show a faint trail even without press? No, only while dragging.
-                lastMouse = { x: pos.x, y: pos.y };
-            }
-        }
+    canvas.addEventListener('touchend', e => {
+        e.preventDefault();
+        joystick.active = false;
+        joystick.dx = 0; joystick.dy = 0;
+    }, { passive: false });
 
-        function handlePointerUp(e) {
-            e.preventDefault();
-            isSwiping = false;
-            // Do not clear trail instantly; let it fade naturally
-        }
+    // UI Buttons
+    document.getElementById('startBtn').addEventListener('click', resetGame);
+    document.getElementById('retryBtn').addEventListener('click', resetGame);
 
-        function handlePointerCancel(e) {
-            e.preventDefault();
-            isSwiping = false;
-        }
-
-        // Register events
-        canvas.addEventListener('mousedown', handlePointerDown);
-        canvas.addEventListener('mousemove', handlePointerMove);
-        canvas.addEventListener('mouseup', handlePointerUp);
-        canvas.addEventListener('mouseleave', handlePointerUp);
-
-        canvas.addEventListener('touchstart', handlePointerDown, { passive: false });
-        canvas.addEventListener('touchmove', handlePointerMove, { passive: false });
-        canvas.addEventListener('touchend', handlePointerUp, { passive: false });
-        canvas.addEventListener('touchcancel', handlePointerCancel, { passive: false });
-
-        // Prevent context menu on canvas
-        canvas.addEventListener('contextmenu', (e) => e.preventDefault());
-
-        // ----- UI BUTTONS -----
-        document.getElementById('startBtn').addEventListener('click', (e) => {
-            e.preventDefault();
-            startGame();
-        });
-        document.getElementById('retryBtn').addEventListener('click', (e) => {
-            e.preventDefault();
-            startGame();
-        });
-
-        // ----- INIT -----
-        resetGame();
-        // start game loop
-        gameLoop();
-
-        // Expose some functions for debugging (optional)
-        window.__resetGame = resetGame;
-    })();
+    // Start loop
+    gameLoop();
 </script>
 </body>
 </html>
