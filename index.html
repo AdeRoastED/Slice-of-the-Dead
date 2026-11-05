@@ -2,572 +2,496 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>🗡️ Ghosts 'n Zombies</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>🩸 GHOSTS 'N ZOMBIES: SPLATTERFALL</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
-        body { background: #050508; overflow: hidden; font-family: 'Courier New', Courier, monospace; }
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+        body { background: #050002; overflow: hidden; font-family: 'Impact', 'Arial Black', sans-serif; color: #fff; }
         canvas { display: block; width: 100vw; height: 100vh; touch-action: none; }
+        
         .overlay {
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: rgba(0,0,0,0.85); color: white; text-align: center; z-index: 10;
+            background: radial-gradient(circle at center, rgba(40, 5, 10, 0.96) 0%, rgba(5, 0, 2, 0.99) 100%);
+            z-index: 10; backdrop-filter: blur(8px); transition: opacity 0.3s ease;
         }
         .hidden { display: none !important; }
-        h1 { font-size: 3.5rem; color: #d4af37; text-shadow: 3px 3px 0 #000; margin-bottom: 10px; }
-        p { font-size: 1.2rem; margin-bottom: 20px; color: #aaa; line-height: 1.5; }
-        .btn {
-            pointer-events: auto; background: #3b2b1a; border: 3px solid #d4af37;
-            color: #fff; font-size: 1.5rem; font-weight: bold; padding: 15px 40px;
-            border-radius: 5px; cursor: pointer; text-transform: uppercase;
-            box-shadow: 0 6px 0 #1a120a; transition: transform 0.1s; font-family: inherit;
+        
+        h1 { 
+            font-size: 3.8rem; letter-spacing: 4px; color: #ff0033; 
+            text-shadow: 0 0 25px #ff0000, 0 0 50px #880000, 5px 5px 0 #000; 
+            margin-bottom: 5px; text-transform: uppercase; text-align: center;
         }
-        .btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #1a120a; }
+        .sub-title { font-size: 1.2rem; color: #ff8800; letter-spacing: 3px; margin-bottom: 20px; text-transform: uppercase; }
+
+        .ui-panel {
+            background: rgba(30, 5, 10, 0.92); border: 2px solid #ff0033;
+            border-radius: 8px; padding: 18px 25px; margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(255,0,50,0.3); max-width: 540px; width: 92%; text-align: left;
+        }
+        
+        .btn-group { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+        .btn {
+            background: linear-gradient(180deg, #880011 0%, #330005 100%); border: 2px solid #ff0033;
+            color: #ffcccc; font-size: 1.2rem; font-weight: bold; padding: 12px 30px; border-radius: 6px; 
+            cursor: pointer; text-transform: uppercase; letter-spacing: 2px;
+            box-shadow: 0 6px 0 #1a0002, 0 0 20px rgba(255, 0, 51, 0.5); 
+            transition: all 0.1s ease; font-family: inherit;
+        }
+        .btn:hover { background: linear-gradient(180deg, #bb0018 0%, #550009 100%); transform: translateY(-2px); }
+        .btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #1a0002; }
+        .btn-secondary { background: linear-gradient(180deg, #2b2b2b 0%, #111111 100%); border-color: #666; }
+
+        .shop-card {
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(20, 2, 5, 0.85); border: 1px solid rgba(255, 0, 51, 0.4);
+            border-radius: 6px; padding: 12px; margin-bottom: 10px;
+        }
+        .shop-info h3 { font-size: 1.05rem; color: #ff3344; }
+        .shop-info p { font-size: 0.82rem; color: #aaa; margin-top: 2px; }
+
+        #hud { position: absolute; top: 15px; left: 15px; z-index: 5; pointer-events: none; }
+        .hud-text { font-size: 1.15rem; color: #ff0033; text-shadow: 2px 2px 0 #000; margin-bottom: 3px; font-weight: bold; }
+        .hp-bar-container { width: 220px; height: 20px; background: rgba(0,0,0,0.9); border: 2px solid #ff0033; border-radius: 4px; overflow: hidden; margin-top: 4px; }
+        .hp-bar-fill { height: 100%; background: linear-gradient(90deg, #660000, #ff0000); width: 100%; transition: width 0.15s ease; }
+
+        #bossHud { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); width: 65%; max-width: 480px; z-index: 5; text-align: center; pointer-events: none; }
+        #bossHpBar { height: 16px; background: rgba(0,0,0,0.9); border: 2px solid #ff0033; border-radius: 4px; overflow: hidden; margin-top: 4px; }
+        #bossHpFill { height: 100%; background: linear-gradient(90deg, #880000, #ff0000); width: 100%; }
+
+        #weaponUI { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 14px; z-index: 5; }
+        .weapon-slot {
+            width: 64px; height: 64px; background: rgba(20, 5, 8, 0.9); border: 2px solid #666;
+            border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem; cursor: pointer; transition: all 0.2s; position: relative; box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+        }
+        .weapon-slot.active { border-color: #ff0033; box-shadow: 0 0 20px rgba(255, 0, 51, 0.9); transform: scale(1.12); }
+        .weapon-key { position: absolute; top: 3px; left: 6px; font-size: 0.75rem; color: #888; font-family: sans-serif; }
+
+        .touch-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 6; pointer-events: none; }
+        .touch-zone-left { position: absolute; top: 0; left: 0; width: 50%; height: 100%; pointer-events: auto; }
+        .touch-action-group { position: absolute; bottom: 25px; right: 20px; display: flex; gap: 15px; align-items: flex-end; pointer-events: auto; }
+        .touch-btn {
+            background: rgba(40, 5, 10, 0.85); border: 2px solid rgba(255, 0, 51, 0.8);
+            border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center;
+            backdrop-filter: blur(4px); box-shadow: 0 6px 20px rgba(0,0,0,0.8); font-weight: bold;
+        }
+        .touch-btn:active { background: rgba(255, 0, 51, 0.6); transform: scale(0.92); }
+        .btn-attack { width: 85px; height: 85px; font-size: 2.2rem; border-color: #ff0033; }
+        .btn-jump { width: 68px; height: 68px; font-size: 1.6rem; }
+        .btn-swap { width: 58px; height: 58px; font-size: 1.3rem; }
+
+        #virtualJoystick {
+            position: absolute; width: 85px; height: 85px; border: 2px dashed rgba(255, 0, 51, 0.6);
+            border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%); display: none; z-index: 7;
+        }
+        #joystickKnob {
+            position: absolute; width: 38px; height: 38px; background: rgba(255, 0, 51, 0.85);
+            border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        }
+
+        .setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; font-size: 1.1rem; }
+        .setting-row input[type="checkbox"] { width: 24px; height: 24px; cursor: pointer; accent-color: #ff0033; }
     </style>
 </head>
 <body>
     <canvas id="gameCanvas"></canvas>
+    <div id="virtualJoystick"><div id="joystickKnob"></div></div>
+
+    <div id="hud" class="hidden">
+        <div class="hud-text" id="scoreTxt">SLAUGHTERED: 0</div>
+        <div class="hud-text" id="soulsTxt">BLOOD: 🩸 0</div>
+        <div class="hud-text" id="distTxt">DEPTH: 0m</div>
+        <div class="hp-bar-container"><div id="hpFill" class="hp-bar-fill"></div></div>
+    </div>
+
+    <div id="bossHud" class="hidden">
+        <div style="color: #ff0033; font-weight: bold; letter-spacing: 2px; text-shadow: 2px 2px 0 #000; font-size: 1rem;">👹 THE CORRUPTED BEHEMOTH 👹</div>
+        <div id="bossHpBar"><div id="bossHpFill"></div></div>
+    </div>
+
+    <div id="weaponUI" class="hidden">
+        <div class="weapon-slot active" id="slot1"><span class="weapon-key">1</span>🔪</div>
+        <div class="weapon-slot" id="slot2"><span class="weapon-key">2</span>🪓</div>
+        <div class="weapon-slot" id="slot3"><span class="weapon-key">3</span>💥</div>
+    </div>
 
     <div id="startScreen" class="overlay">
-        <h1>GHOSTS 'N ZOMBIES</h1>
-        <p>A / D or Arrow Keys to Move<br>W / Up / Space to Jump<br>Click / Tap to Throw Daggers</p>
-        <button id="startBtn" class="btn">ENTER THE GRAVEYARD</button>
+        <h1>SPLATTERFALL</h1>
+        <div class="sub-title">Ghosts 'n Zombies Arcade Gore</div>
+        <div class="ui-panel" style="text-align: center;">
+            <p style="font-size: 1.25rem; color: #ff3344; margin-bottom: 8px;">Total Blood: 🩸 <span id="menuSouls">0</span></p>
+            <p style="font-size: 0.85rem; color: #aaa;">Touch Left Side to Move • Use Right Buttons to Rip & Tear</p>
+        </div>
+        <div class="btn-group">
+            <button id="startBtn" class="btn">ENTER THE HOUSE</button>
+            <button id="shopBtn" class="btn btn-secondary">BERSERKER SHOP 🩸</button>
+            <button id="settingsBtn" class="btn btn-secondary">SETTINGS ⚙️</button>
+        </div>
+    </div>
+
+    <div id="shopScreen" class="overlay hidden">
+        <h1>BERSERKER SHOP</h1>
+        <div class="sub-title">Available Blood: 🩸 <span id="shopSouls">0</span></div>
+        <div class="ui-panel">
+            <div class="shop-card">
+                <div class="shop-info">
+                    <h3>🩸 Max HP (Lvl <span id="lvlHp">0</span>)</h3>
+                    <p>Increases vitality by +20</p>
+                </div>
+                <button id="buyHpBtn" class="btn" style="padding: 6px 16px; font-size: 0.85rem;">10 🩸</button>
+            </div>
+            <div class="shop-card">
+                <div class="shop-info">
+                    <h3>🔪 Violence Level (Lvl <span id="lvlDmg">0</span>)</h3>
+                    <p>Increases weapon carnage & impact damage</p>
+                </div>
+                <button id="buyDmgBtn" class="btn" style="padding: 6px 16px; font-size: 0.85rem;">15 🩸</button>
+            </div>
+            <div class="shop-card">
+                <div class="shop-info">
+                    <h3>👟 Blood Rush (Lvl <span id="lvlSpeed">0</span>)</h3>
+                    <p>Boosts sprint speed & jump power</p>
+                </div>
+                <button id="buySpeedBtn" class="btn" style="padding: 6px 16px; font-size: 0.85rem;">12 🩸</button>
+            </div>
+        </div>
+        <button id="closeShopBtn" class="btn">MAIN MENU</button>
+    </div>
+
+    <div id="settingsScreen" class="overlay hidden">
+        <h1>SETTINGS</h1>
+        <div class="ui-panel">
+            <div class="setting-row">
+                <label for="cfgAudio">Master SFX & Music</label>
+                <input type="checkbox" id="cfgAudio" checked>
+            </div>
+            <div class="setting-row">
+                <label for="cfgShake">Screen Shake FX</label>
+                <input type="checkbox" id="cfgShake" checked>
+            </div>
+            <div class="setting-row">
+                <label for="cfgGore">Extreme Gore & Blood FX</label>
+                <input type="checkbox" id="cfgGore" checked>
+            </div>
+        </div>
+        <button id="closeSettingsBtn" class="btn">BACK TO MENU</button>
     </div>
 
     <div id="gameOverScreen" class="overlay hidden">
-        <h1>YOU DIED</h1>
-        <p>Zombies Slain: <span id="finalScore">0</span></p>
-        <button id="retryBtn" class="btn">TRY AGAIN</button>
+        <h1 style="color: #ff0000; text-shadow: 0 0 40px #880000;">SPLATTERED</h1>
+        <div class="ui-panel" style="text-align: center;">
+            <p style="font-size: 1.25rem;">Monsters Slain: <span id="finalScore">0</span></p>
+            <p style="font-size: 1.25rem; margin-top: 6px;">Blood Harvested: 🩸 <span id="runSouls">0</span></p>
+            <p style="font-size: 1.05rem; color: #aaa; margin-top: 8px;">Depth Reached: <span id="finalDist">0</span>m</p>
+        </div>
+        <div class="btn-group">
+            <button id="retryBtn" class="btn">TRY AGAIN</button>
+            <button id="adReviveBtn" class="btn btn-secondary" style="border-color: #ff0033; color: #ff0033;">📺 REVIVE (AD)</button>
+        </div>
+    </div>
+
+    <div id="touchControls" class="touch-overlay hidden">
+        <div id="touchLeftZone" class="touch-zone-left"></div>
+        <div class="touch-action-group">
+            <div id="btnSwap" class="touch-btn btn-swap">🔄</div>
+            <div id="btnJump" class="touch-btn btn-jump">▲</div>
+            <div id="btnAttack" class="touch-btn btn-attack">⚔️</div>
+        </div>
     </div>
 
 <script>
+    // --- SAVE DATA ---
+    const SaveData = {
+        souls: 0, lvlHp: 0, lvlDmg: 0, lvlSpeed: 0,
+        load() { const d = localStorage.getItem('splatter_save'); if (d) Object.assign(this, JSON.parse(d)); this.updateUI(); },
+        save() { localStorage.setItem('splatter_save', JSON.stringify({ souls: this.souls, lvlHp: this.lvlHp, lvlDmg: this.lvlDmg, lvlSpeed: this.lvlSpeed })); this.updateUI(); },
+        updateUI() {
+            document.getElementById('menuSouls').innerText = this.souls;
+            document.getElementById('shopSouls').innerText = this.souls;
+            document.getElementById('lvlHp').innerText = this.lvlHp;
+            document.getElementById('lvlDmg').innerText = this.lvlDmg;
+            document.getElementById('lvlSpeed').innerText = this.lvlSpeed;
+            document.getElementById('buyHpBtn').innerText = `${(this.lvlHp + 1) * 10} 🩸`;
+            document.getElementById('buyDmgBtn').innerText = `${(this.lvlDmg + 1) * 15} 🩸`;
+            document.getElementById('buySpeedBtn').innerText = `${(this.lvlSpeed + 1) * 12} 🩸`;
+        }
+    };
+    SaveData.load();
+
+    const config = {
+        audio: true, shake: true, gore: true,
+        load() {
+            const s = localStorage.getItem('splatter_cfg');
+            if (s) Object.assign(this, JSON.parse(s));
+            document.getElementById('cfgAudio').checked = this.audio;
+            document.getElementById('cfgShake').checked = this.shake;
+            document.getElementById('cfgGore').checked = this.gore;
+        },
+        save() {
+            this.audio = document.getElementById('cfgAudio').checked;
+            this.shake = document.getElementById('cfgShake').checked;
+            this.gore = document.getElementById('cfgGore').checked;
+            localStorage.setItem('splatter_cfg', JSON.stringify({ audio: this.audio, shake: this.shake, gore: this.gore }));
+        }
+    };
+    config.load();
+
+    // --- SYNTHETIC AUDIO ENGINE ---
+    class SoundEngine {
+        constructor() { this.ctx = null; }
+        init() {
+            if (!this.ctx) { const AC = window.AudioContext || window.webkitAudioContext; if (AC) this.ctx = new AC(); }
+            if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+        }
+        playTone(f, t, d, v=0.1, s=null) {
+            if (!config.audio || !this.ctx) return;
+            try {
+                const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+                o.type = t; o.frequency.setValueAtTime(f, this.ctx.currentTime);
+                if (s) o.frequency.exponentialRampToValueAtTime(s, this.ctx.currentTime + d);
+                g.gain.setValueAtTime(v, this.ctx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + d);
+                o.connect(g); g.connect(this.ctx.destination); o.start(); o.stop(this.ctx.currentTime + d);
+            } catch(e) {}
+        }
+        playNoise(d, v=0.2) {
+            if (!config.audio || !this.ctx) return;
+            try {
+                const bS = this.ctx.sampleRate * d, b = this.ctx.createBuffer(1, bS, this.ctx.sampleRate), dt = b.getChannelData(0);
+                for (let i = 0; i < bS; i++) dt[i] = Math.random() * 2 - 1;
+                const n = this.ctx.createBufferSource(); n.buffer = b;
+                const g = this.ctx.createGain(); g.gain.setValueAtTime(v, this.ctx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + d);
+                n.connect(g); g.connect(this.ctx.destination); n.start();
+            } catch(e) {}
+        }
+        playJump() { this.playTone(120, 'sawtooth', 0.12, 0.1, 280); }
+        playSlash() { this.playNoise(0.08, 0.3); this.playTone(400, 'sawtooth', 0.1, 0.1, 100); }
+        playShotgun() { this.playNoise(0.25, 0.5); this.playTone(80, 'sawtooth', 0.25, 0.3, 30); }
+        playHit() { this.playNoise(0.1, 0.35); }
+        playDeath() { this.playTone(90, 'sawtooth', 0.4, 0.2, 25); this.playNoise(0.3, 0.25); }
+        playRoar() { this.playTone(60, 'sawtooth', 0.9, 0.5, 20); this.playNoise(0.8, 0.4); }
+    }
+    const sound = new SoundEngine();
+
+    // --- PROCEDURAL MUSIC ENGINE (Dark Samurai Boom-Bap) ---
+    class MusicEngine {
+        constructor() {
+            this.ctx = null; this.isPlaying = false; this.tempo = 90;
+            this.nextNoteTime = 0; this.currentStep = 0;
+            this.lookahead = 25.0; this.scheduleAheadTime = 0.1; this.timerID = null;
+        }
+        init() {
+            if (!this.ctx) { const AC = window.AudioContext || window.webkitAudioContext; if (AC) this.ctx = new AC(); }
+            if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+        }
+        start() {
+            if (this.isPlaying || !config.audio) return;
+            this.init(); this.isPlaying = true; this.currentStep = 0;
+            this.nextNoteTime = this.ctx.currentTime; this.scheduler();
+        }
+        stop() { this.isPlaying = false; if (this.timerID) clearTimeout(this.timerID); }
+        scheduler() {
+            if (!this.isPlaying) return;
+            while (this.nextNoteTime < this.ctx.currentTime + this.scheduleAheadTime) {
+                this.playStep(this.currentStep, this.nextNoteTime);
+                this.advanceStep();
+            }
+            this.timerID = setTimeout(() => this.scheduler(), this.lookahead);
+        }
+        advanceStep() {
+            const secondsPerBeat = 60.0 / this.tempo;
+            this.nextNoteTime += 0.25 * secondsPerBeat;
+            this.currentStep = (this.currentStep + 1) % 16;
+        }
+        playStep(step, time) {
+            if (!this.ctx) return;
+            if (step === 0 || step === 3 || step === 6 || step === 10 || step === 12) this.playKick(time);
+            if (step === 4 || step === 12) this.playSnare(time);
+            if (step % 2 === 0) this.playHat(time);
+            if (step === 0 || step === 6 || step === 8 || step === 14) this.playBass(time, step);
+        }
+        playKick(time) {
+            const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+            osc.connect(gain); gain.connect(this.ctx.destination);
+            osc.frequency.setValueAtTime(150, time); osc.frequency.exponentialRampToValueAtTime(40, time + 0.12);
+            gain.gain.setValueAtTime(0.8, time); gain.gain.exponentialRampToValueAtTime(0.01, time + 0.4);
+            osc.start(time); osc.stop(time + 0.4);
+        }
+        playSnare(time) {
+            const bS = this.ctx.sampleRate * 0.2, b = this.ctx.createBuffer(1, bS, this.ctx.sampleRate), dt = b.getChannelData(0);
+            for (let i = 0; i < bS; i++) dt[i] = Math.random() * 2 - 1;
+            const noise = this.ctx.createBufferSource(); noise.buffer = b;
+            const filter = this.ctx.createBiquadFilter(); filter.type = 'bandpass'; filter.frequency.value = 1800;
+            const gain = this.ctx.createGain(); noise.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination);
+            gain.gain.setValueAtTime(0.4, time); gain.gain.exponentialRampToValueAtTime(0.01, time + 0.15);
+            noise.start(time);
+        }
+        playHat(time) {
+            const bS = this.ctx.sampleRate * 0.05, b = this.ctx.createBuffer(1, bS, this.ctx.sampleRate), dt = b.getChannelData(0);
+            for (let i = 0; i < bS; i++) dt[i] = Math.random() * 2 - 1;
+            const noise = this.ctx.createBufferSource(); noise.buffer = b;
+            const filter = this.ctx.createBiquadFilter(); filter.type = 'highpass'; filter.frequency.value = 8000;
+            const gain = this.ctx.createGain(); noise.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination);
+            gain.gain.setValueAtTime(0.15, time); gain.gain.exponentialRampToValueAtTime(0.01, time + 0.03);
+            noise.start(time);
+        }
+        playBass(time, step) {
+            const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+            osc.connect(gain); gain.connect(this.ctx.destination); osc.type = 'sawtooth';
+            let freq = 73.42; if (step === 6) freq = 65.41; if (step === 8) freq = 58.27;
+            osc.frequency.setValueAtTime(freq, time);
+            gain.gain.setValueAtTime(0.2, time); gain.gain.exponentialRampToValueAtTime(0.01, time + 0.2);
+            osc.start(time); osc.stop(time + 0.2);
+        }
+    }
+    const music = new MusicEngine();
+
+    // --- SETUP ---
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     
-    // UI Elements
-    const startScreen = document.getElementById('startScreen');
-    const gameOverScreen = document.getElementById('gameOverScreen');
-    const finalScore = document.getElementById('finalScore');
-
-    // Resize
-    let width, height;
+    let width, height, GROUND_Y;
     function resize() {
         width = window.innerWidth; height = window.innerHeight;
         canvas.width = width; canvas.height = height;
+        GROUND_Y = height - 85;
     }
     window.addEventListener('resize', resize);
     resize();
 
-    // Game State
-    let gameActive = false;
-    let score = 0;
-    let cameraX = 0;
-    let spawnTimer = 0;
-    let screenShake = 0;
+    const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (isMobile) document.getElementById('touchControls').classList.remove('hidden');
 
-    // World Data
-    const GRAVITY = 0.6;
-    const GROUND_Y = height - 60;
-    let platforms = [];
-    let zombies = [];
-    let projectiles = [];
-    let particles = [];
+    // --- GAME STATE ---
+    let gameActive = false, hitStop = 0, screenFlash = 0;
+    let score = 0, runSouls = 0, cameraX = 0, globalTime = 0, screenShake = 0;
+    let combo = 0, comboTimer = 0;
 
-    // The Player
+    let zombies = [], projectiles = [], particles = [], floatingTexts = [], platforms = [], decals = [];
+    let boss = null;
+    let bossSpawned = false;
+    const GRAVITY = 0.65;
+
     const player = {
-        x: 100, y: GROUND_Y - 40,
-        vx: 0, vy: 0,
-        width: 24, height: 40,
-        speed: 5.5,
-        jumpPower: -13,
-        isGrounded: true,
-        facing: 1, // 1 = right, -1 = left
-        attackCooldown: 0,
-        hp: 100,
-        hitFlash: 0
+        x: 100, y: 0, vx: 0, vy: 0, width: 34, height: 54,
+        speed: 6.5, jumpPower: -14, isGrounded: true, facing: 1,
+        hp: 100, maxHp: 100, hitFlash: 0, attackCooldown: 0, attackAnim: 0,
+        weapon: 1, enraged: false
     };
 
-    // Inputs
-    const keys = { a: false, d: false, w: false, up: false, left: false, right: false };
-    let attackInput = false;
+    const keys = { a: false, d: false, jumpPressed: false };
+    let joystickActive = false;
+    let joystickOrigin = { x: 0, y: 0 };
+    let joystickCurrent = { x: 0, y: 0 };
 
-    // --- CORE FUNCTIONS ---
-
+    // --- INIT ---
     function resetGame() {
-        gameActive = true;
-        score = 0;
-        cameraX = 0;
-        player.x = 100;
-        player.y = GROUND_Y - 40;
-        player.vx = 0; player.vy = 0;
-        player.hp = 100;
-        player.hitFlash = 0;
+        sound.init();
+        music.start();
+        gameActive = true; score = 0; runSouls = 0; cameraX = 0; globalTime = 0; screenShake = 0; combo = 0; hitStop = 0; screenFlash = 0;
+        bossSpawned = false;
         
-        zombies = [];
-        projectiles = [];
-        particles = [];
-        
-        // Generate some floating platforms
+        player.maxHp = 100 + SaveData.lvlHp * 20;
+        player.hp = player.maxHp;
+        player.speed = 6.5 + SaveData.lvlSpeed * 0.6;
+        player.jumpPower = -14 - SaveData.lvlSpeed * 0.4;
+        player.x = 100; player.y = GROUND_Y - player.height; player.vx = 0; player.vy = 0;
+        player.weapon = 1; player.enraged = false; player.attackAnim = 0;
+
+        zombies = []; projectiles = []; particles = []; floatingTexts = []; decals = []; boss = null;
+
         platforms = [
-            { x: 300, y: GROUND_Y - 120, w: 150, h: 20 },
-            { x: 600, y: GROUND_Y - 200, w: 200, h: 20 },
-            { x: 950, y: GROUND_Y - 100, w: 150, h: 20 },
-            { x: 1300, y: GROUND_Y - 180, w: 200, h: 20 },
-            { x: 1700, y: GROUND_Y - 120, w: 150, h: 20 }
+            { x: 450, y: GROUND_Y - 140, w: 200, h: 22 },
+            { x: 850, y: GROUND_Y - 240, w: 180, h: 22 },
+            { x: 1250, y: GROUND_Y - 130, w: 220, h: 22 }
         ];
-        
-        startScreen.classList.add('hidden');
-        gameOverScreen.classList.add('hidden');
+
+        hideOverlays();
+        document.getElementById('hud').classList.remove('hidden');
+        document.getElementById('weaponUI').classList.remove('hidden');
+        updateWeaponUI();
+    }
+
+    function hideOverlays() {
+        music.stop();
+        document.getElementById('startScreen').classList.add('hidden');
+        document.getElementById('shopScreen').classList.add('hidden');
+        document.getElementById('settingsScreen').classList.add('hidden');
+        document.getElementById('gameOverScreen').classList.add('hidden');
+        document.getElementById('bossHud').classList.add('hidden');
     }
 
     function gameOver() {
         gameActive = false;
-        finalScore.innerText = score;
-        gameOverScreen.classList.remove('hidden');
+        music.stop();
+        SaveData.souls += runSouls;
+        SaveData.save();
+
+        document.getElementById('finalScore').innerText = score;
+        document.getElementById('runSouls').innerText = runSouls;
+        document.getElementById('finalDist').innerText = Math.floor(player.x / 10);
+        document.getElementById('hud').classList.add('hidden');
+        document.getElementById('weaponUI').classList.add('hidden');
+        document.getElementById('bossHud').classList.add('hidden');
+        document.getElementById('gameOverScreen').classList.remove('hidden');
     }
 
-    // --- SPAWNING ---
+    function revivePlayer() {
+        music.start();
+        gameActive = true;
+        player.hp = player.maxHp * 0.5;
+        player.hitFlash = 60; 
+        player.y -= 100; 
+        zombies = [];
+        if (boss) { boss.hp = boss.maxHp; boss.state = 'flying'; }
+        document.getElementById('gameOverScreen').classList.add('hidden');
+        document.getElementById('hud').classList.remove('hidden');
+        document.getElementById('weaponUI').classList.remove('hidden');
+        if (boss) document.getElementById('bossHud').classList.remove('hidden');
+        addFloatingText("REVIVED!", player.x, player.y - 30, '#00ff00', 30);
+    }
 
+    function updateWeaponUI() {
+        document.querySelectorAll('.weapon-slot').forEach(el => el.classList.remove('active'));
+        document.getElementById(`slot${player.weapon}`).classList.add('active');
+    }
+
+    function addFloatingText(txt, x, y, color = '#fff', size = 20) {
+        floatingTexts.push({ txt, x, y, color, size, vy: -2, life: 1.0 });
+    }
+
+    // --- COMBAT & SPAWNING ---
     function spawnZombie() {
-        // Spawn ahead of the player, just off-screen right
-        let spawnX = player.x + width + 100;
-        // 30% chance to spawn on a random platform
-        let spawnY = GROUND_Y - 40;
-        if (Math.random() < 0.3 && platforms.length > 0) {
-            const p = platforms[Math.floor(Math.random() * platforms.length)];
-            spawnX = p.x + p.w / 2;
-            spawnY = p.y - 35;
-        }
+        if (boss) return;
+        let spawnX = player.x + width + 80;
+        let zType = Math.random();
+        let type = zType < 0.35 ? 1 : (zType > 0.8 ? 2 : 0);
 
-        zombies.push({
-            x: spawnX, y: spawnY,
-            vx: -1.5 - Math.random(), vy: 0,
-            width: 26, height: 38,
-            isGrounded: false,
-            hp: 1,
-            hitFlash: 0
-        });
+        let hp = type === 2 ? 5 : 1;
+        let w = type === 2 ? 46 : (type === 1 ? 38 : 30);
+        let h = type === 2 ? 65 : (type === 1 ? 26 : 50);
+        let speed = type === 1 ? 3.8 : (type === 2 ? 1.1 : 1.9);
+
+        zombies.push({ type, x: spawnX, y: GROUND_Y - h, vx: -speed, vy: 0, width: w, height: h, speed, hp, maxHp: hp, anim: Math.random() * 10 });
+
+        if (!boss && !bossSpawned && Math.floor(player.x / 10) >= 100) {
+            sound.playRoar();
+            boss = { x: player.x + width + 150, y: GROUND_Y - 240, vx: -1.5, vy: 0, width: 145, height: 115, hp: 70, maxHp: 70, state: 'flying', timer: 0, hitFlash: 0, anim: 0 };
+            bossSpawned = true;
+            document.getElementById('bossHud').classList.remove('hidden');
+            addFloatingText("BEHEMOTH AWAKENS!", player.x + width / 3, height / 3, '#ff0033', 32);
+            if (config.shake) screenShake = 30;
+        }
     }
 
-    // --- ATTACK ---
-
-    function throwDagger() {
+    function attack() {
         if (player.attackCooldown > 0 || !gameActive) return;
-        player.attackCooldown = 15; // frames
-        
-        projectiles.push({
-            x: player.x + (player.facing === 1 ? player.width : 0),
-            y: player.y + 15,
-            vx: player.facing * 12,
-            width: 15, height: 4,
-            life: 100
-        });
-    }
 
-    // --- UPDATE LOOP ---
+        let dmgBonus = SaveData.lvlDmg * 0.5;
+        player.attackAnim = 12;
 
-    function update() {
-        if (!gameActive) return;
-
-        // Screen Shake decay
-        if (screenShake > 0) screenShake -= 1;
-
-        // 1. Player Horizontal Movement
-        let moveX = 0;
-        if (keys.a || keys.left) moveX -= 1;
-        if (keys.d || keys.right) moveX += 1;
-        
-        if (moveX !== 0) {
-            player.vx = moveX * player.speed;
-            player.facing = moveX; // Face direction of movement
-        } else {
-            player.vx = 0;
-        }
-
-        // 2. Jumping
-        if ((keys.w || keys.up) && player.isGrounded) {
-            player.vy = player.jumpPower;
-            player.isGrounded = false;
-        }
-
-        // 3. Apply Gravity
-        player.vy += GRAVITY;
-        player.x += player.vx;
-        player.y += player.vy;
-
-        // 4. Attack Cooldown
-        if (player.attackCooldown > 0) player.attackCooldown--;
-        if (player.hitFlash > 0) player.hitFlash--;
-        if (attackInput) throwDagger();
-
-        // 5. Camera Follow
-        let targetCamX = player.x - width / 3;
-        if (targetCamX < 0) targetCamX = 0;
-        cameraX += (targetCamX - cameraX) * 0.1;
-
-        // 6. Collision (Player vs Platforms & Ground)
-        player.isGrounded = false;
-        
-        // Ground collision
-        if (player.y + player.height >= GROUND_Y) {
-            player.y = GROUND_Y - player.height;
-            player.vy = 0;
-            player.isGrounded = true;
-        }
-
-        // Platform collision
-        platforms.forEach(p => {
-            if (player.vy >= 0 && // Falling
-                player.x + player.width > p.x && player.x < p.x + p.w &&
-                player.y + player.height > p.y && player.y + player.height < p.y + p.h + player.vy) {
-                
-                player.y = p.y - player.height;
-                player.vy = 0;
-                player.isGrounded = true;
-            }
-        });
-
-        // 7. Update Projectiles
-        for (let i = projectiles.length - 1; i >= 0; i--) {
-            const pr = projectiles[i];
-            pr.x += pr.vx;
-            pr.life--;
-
-            // Remove if off-screen or dead
-            if (pr.life <= 0 || pr.x < cameraX - 100 || pr.x > cameraX + width + 100) {
-                projectiles.splice(i, 1);
-                continue;
-            }
-
-            // Hit zombie
-            for (let j = zombies.length - 1; j >= 0; j--) {
-                const z = zombies[j];
-                if (pr.x + pr.width > z.x && pr.x < z.x + z.width &&
-                    pr.y + pr.height > z.y && pr.y < z.y + z.height) {
-                    
-                    // Zombie dies
-                    score++;
-                    screenShake = 10;
-                    
-                    // Blood particles
-                    for (let k = 0; k < 12; k++) {
-                        particles.push({
-                            x: z.x + z.width/2, y: z.y + z.height/2,
-                            vx: (Math.random() - 0.5) * 10, vy: (Math.random() - 0.5) * 10,
-                            life: 1.0, color: `hsl(${80 + Math.random()*40}, 70%, 40%)`
-                        });
-                    }
-                    
-                    zombies.splice(j, 1);
-                    projectiles.splice(i, 1);
-                    break;
-                }
-            }
-        }
-
-        // 8. Update Zombies
-        for (let i = zombies.length - 1; i >= 0; i--) {
-            const z = zombies[i];
-            
-            // Simple AI: Walk left towards player
-            z.vx = (player.x < z.x) ? -1.5 : 1.5;
-            z.vy += GRAVITY;
-            z.x += z.vx;
-            z.y += z.vy;
-
-            // Collision with ground
-            z.isGrounded = false;
-            if (z.y + z.height >= GROUND_Y) {
-                z.y = GROUND_Y - z.height;
-                z.vy = 0;
-                z.isGrounded = true;
-            }
-
-            // Collision with platforms
-            platforms.forEach(p => {
-                if (z.vy >= 0 &&
-                    z.x + z.width > p.x && z.x < p.x + p.w &&
-                    z.y + z.height > p.y && z.y + z.height < p.y + p.h + z.vy) {
-                    z.y = p.y - z.height;
-                    z.vy = 0;
-                    z.isGrounded = true;
-                }
-            });
-
-            if (z.hitFlash > 0) z.hitFlash--;
-
-            // Hit player
-            if (player.x + player.width > z.x && player.x < z.x + z.width &&
-                player.y + player.height > z.y && player.y < z.y + z.height) {
-                
-                player.hp -= 1; // Damage
-                player.hitFlash = 10;
-                screenShake = 15;
-                
-                // Knockback player
-                player.vx = (player.x < z.x) ? -8 : 8;
-                player.vy = -5;
-                
-                // Knockback zombie
-                z.x += (z.x < player.x) ? -10 : 10;
-
-                if (player.hp <= 0) {
-                    gameOver();
-                    return;
-                }
-            }
-
-            // Remove zombies that fall off or go too far behind
-            if (z.y > height + 200 || z.x < cameraX - 300) {
-                zombies.splice(i, 1);
-            }
-        }
-
-        // 9. Spawning
-        spawnTimer--;
-        if (spawnTimer <= 0) {
-            spawnZombie();
-            spawnTimer = Math.max(30, 100 - Math.floor(score / 3) * 5);
-        }
-
-        // 10. Particles
-        for (let i = particles.length - 1; i >= 0; i--) {
-            const p = particles[i];
-            p.x += p.vx; p.y += p.vy;
-            p.vy += GRAVITY * 0.5;
-            p.life -= 0.02;
-            if (p.life <= 0) particles.splice(i, 1);
-        }
-    }
-
-    // --- DRAWING ---
-
-    function draw() {
-        // Screen Shake translation
-        ctx.save();
-        if (screenShake > 0) {
-            ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
-        }
-
-        // Clear background (Night Sky)
-        const skyGrad = ctx.createLinearGradient(0, 0, 0, height);
-        skyGrad.addColorStop(0, '#0a0a1a');
-        skyGrad.addColorStop(1, '#1a1a2e');
-        ctx.fillStyle = skyGrad;
-        ctx.fillRect(0, 0, width, height);
-
-        // Moon
-        ctx.fillStyle = '#d4d4d4';
-        ctx.shadowColor = '#fff'; ctx.shadowBlur = 40;
-        ctx.beginPath(); ctx.arc(width - 150, 100, 50, 0, Math.PI*2); ctx.fill();
-        ctx.shadowBlur = 0;
-
-        // Parallax Mountains (Background)
-        ctx.fillStyle = '#141424';
-        ctx.beginPath();
-        ctx.moveTo(0, height);
-        for (let i = 0; i < width + 200; i += 100) {
-            let mx = i - (cameraX * 0.2) % 200;
-            let my = height - 200 + Math.sin(i * 0.01) * 80;
-            ctx.lineTo(mx, my);
-        }
-        ctx.lineTo(width, height);
-        ctx.fill();
-
-        // Parallax Trees (Midground)
-        ctx.fillStyle = '#0d0d18';
-        for (let i = -200; i < width + 200; i += 120) {
-            let tx = i - (cameraX * 0.5) % 120;
-            ctx.fillRect(tx, height - 350, 20, 350);
-            ctx.beginPath(); ctx.arc(tx + 10, height - 350, 40, 0, Math.PI*2); ctx.fill();
-        }
-
-        // World Translation (Camera)
-        ctx.save();
-        ctx.translate(-cameraX, 0);
-
-        // Draw Platforms
-        platforms.forEach(p => {
-            ctx.fillStyle = '#2a2a35';
-            ctx.fillRect(p.x, p.y, p.w, p.h);
-            // Top highlight
-            ctx.fillStyle = '#3a3a4a';
-            ctx.fillRect(p.x, p.y, p.w, 4);
-        });
-
-        // Draw Ground
-        ctx.fillStyle = '#1a1a25';
-        ctx.fillRect(cameraX, GROUND_Y, width, height - GROUND_Y);
-        ctx.fillStyle = '#2a2a35';
-        ctx.fillRect(cameraX, GROUND_Y, width, 5); // Grass/Top edge
-
-        // Draw Particles
-        particles.forEach(p => {
-            ctx.fillStyle = p.color;
-            ctx.globalAlpha = p.life;
-            ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill();
-        });
-        ctx.globalAlpha = 1;
-
-        // Draw Projectiles (Daggers)
-        projectiles.forEach(pr => {
-            ctx.fillStyle = '#d4af37';
-            ctx.shadowColor = '#d4af37'; ctx.shadowBlur = 10;
-            ctx.fillRect(pr.x, pr.y, pr.width, pr.height);
-            // Dagger handle
-            ctx.fillStyle = '#8b4513';
-            ctx.fillRect(pr.x + (pr.vx > 0 ? -5 : pr.width), pr.y - 2, 5, 8);
-            ctx.shadowBlur = 0;
-        });
-
-        // Draw Zombies
-        zombies.forEach(z => {
-            ctx.save();
-            ctx.translate(z.x, z.y);
-            
-            // Walking animation (bobbing)
-            let bob = Math.sin(Date.now() * 0.01) * 2;
-            if (!z.isGrounded) bob = 0;
-
-            // Zombie Body
-            ctx.fillStyle = '#4a7a3a';
-            ctx.fillRect(4, 10 + bob, 18, 28);
-            
-            // Zombie Head
-            ctx.fillStyle = '#5a8a4a';
-            ctx.beginPath(); ctx.arc(13, 10 + bob, 10, 0, Math.PI*2); ctx.fill();
-            
-            // Red Eyes
-            ctx.fillStyle = '#ff3333';
-            ctx.fillRect(10, 6 + bob, 3, 3);
-            ctx.fillRect(16, 6 + bob, 3, 3);
-
-            // Arms reaching out
-            ctx.fillStyle = '#4a7a3a';
-            if (z.vx < 0) {
-                ctx.fillRect(-6, 15 + bob, 12, 6); // Left arm
-            } else {
-                ctx.fillRect(20, 15 + bob, 12, 6); // Right arm
-            }
-            
-            ctx.restore();
-        });
-
-        // Draw Player (Knight)
-        ctx.save();
-        ctx.translate(player.x, player.y);
-        
-        // Flash white if hit
-        if (player.hitFlash > 0) {
-            ctx.globalAlpha = Math.sin(Date.now() * 0.05) * 0.5 + 0.5;
-        }
-
-        // Body (Armor)
-        ctx.fillStyle = '#5c7c9e'; // Steel blue
-        ctx.fillRect(4, 15, 16, 25);
-        
-        // Head (Helmet)
-        ctx.fillStyle = '#8ca8c4';
-        ctx.fillRect(6, 0, 12, 15);
-        // Visor
-        ctx.fillStyle = '#111';
-        ctx.fillRect(player.facing === 1 ? 12 : 6, 4, 6, 4);
-
-        // Legs
-        ctx.fillStyle = '#3b5066';
-        let legOffset = player.isGrounded && player.vx !== 0 ? Math.sin(Date.now() * 0.02) * 6 : 0;
-        ctx.fillRect(4, 38, 6, 2 + legOffset);
-        ctx.fillRect(14, 38, 6, 2 - legOffset);
-
-        // Sword (If attacking)
-        if (player.attackCooldown > 5) {
-            ctx.fillStyle = '#fff';
-            ctx.shadowColor = '#fff'; ctx.shadowBlur = 15;
-            ctx.beginPath();
-            ctx.moveTo(player.facing === 1 ? 20 : -10, 20);
-            ctx.lineTo(player.facing === 1 ? 50 : -40, 10);
-            ctx.lineTo(player.facing === 1 ? 50 : -40, 16);
-            ctx.lineTo(player.facing === 1 ? 20 : -10, 26);
-            ctx.fill();
-            ctx.shadowBlur = 0;
-        }
-
-        ctx.restore(); // End Player drawing
-
-        ctx.restore(); // End World Translation
-
-        // --- HUD (Fixed to screen) ---
-        // Vignette effect
-        const vignette = ctx.createRadialGradient(width/2, height/2, height/3, width/2, height/2, height);
-        vignette.addColorStop(0, 'rgba(0,0,0,0)');
-        vignette.addColorStop(1, 'rgba(0,0,0,0.8)');
-        ctx.fillStyle = vignette;
-        ctx.fillRect(0, 0, width, height);
-
-        // UI Text
-        ctx.fillStyle = '#d4af37';
-        ctx.font = 'bold 24px "Courier New", monospace';
-        ctx.textAlign = 'left';
-        ctx.fillText(`SLAIN: ${score}`, 20, 40);
-        ctx.fillText(`DISTANCE: ${Math.floor(player.x / 10)}m`, 20, 70);
-
-        // Health Bar
-        ctx.fillStyle = '#333';
-        ctx.fillRect(20, 90, 200, 20);
-        ctx.fillStyle = '#8b0000'; // Dark red
-        ctx.fillRect(20, 90, Math.max(0, (player.hp / 100) * 200), 20);
-        ctx.strokeStyle = '#d4af37';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(20, 90, 200, 20);
-
-        if (player.hitFlash > 0) {
-            ctx.fillStyle = 'rgba(255, 0, 0, 0.2)';
-            ctx.fillRect(0, 0, width, height);
-        }
-
-        ctx.restore(); // End Screen Shake
-    }
-
-    function gameLoop() {
-        update();
-        draw();
-        requestAnimationFrame(gameLoop);
-    }
-
-    // --- INPUT HANDLING ---
-
-    window.addEventListener('keydown', e => {
-        if (e.key === 'w' || e.key === 'ArrowUp' || e.key === ' ') keys.w = keys.up = true;
-        if (e.key === 'a' || e.key === 'ArrowLeft') keys.a = keys.left = true;
-        if (e.key === 'd' || e.key === 'ArrowRight') keys.d = keys.right = true;
-    });
-    window.addEventListener('keyup', e => {
-        if (e.key === 'w' || e.key === 'ArrowUp' || e.key === ' ') keys.w = keys.up = false;
-        if (e.key === 'a' || e.key === 'ArrowLeft') keys.a = keys.left = false;
-        if (e.key === 'd' || e.key === 'ArrowRight') keys.d = keys.right = false;
-    });
-
-    // Mouse/Touch to attack
-    canvas.addEventListener('mousedown', e => {
-        e.preventDefault();
-        attackInput = true;
-        throwDagger();
-    });
-    window.addEventListener('mouseup', () => attackInput = false);
-    
-    canvas.addEventListener('touchstart', e => {
-        e.preventDefault();
-        attackInput = true;
-        throwDagger();
-    }, { passive: false });
-    window.addEventListener('touchend', () => attackInput = false);
-
-    // UI Buttons
-    document.getElementById('startBtn').addEventListener('click', resetGame);
-    document.getElementById('retryBtn').addEventListener('click', resetGame);
-
-    // Start loop
-    gameLoop();
-</script>
-</body>
-</html>
+        if (player.weapon === 1) { // Spiked Knuckles Slash
+            player.attackCooldown = 10; sound.playSlash();
+            projectiles.push({ x: player.x + (player.facing === 1 ? player.width : -15), y: player.y + 15, vx:
