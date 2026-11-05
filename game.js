@@ -185,15 +185,12 @@
 
     // --- INIT ---
     function resetGame() {
-        sound.init();
-        music.start();
+        sound.init(); music.start();
         gameActive = true; score = 0; runSouls = 0; cameraX = 0; globalTime = 0; screenShake = 0; combo = 0; hitStop = 0; screenFlash = 0;
         bossSpawned = false;
         
-        player.maxHp = 100 + SaveData.lvlHp * 20;
-        player.hp = player.maxHp;
-        player.speed = 6.5 + SaveData.lvlSpeed * 0.6;
-        player.jumpPower = -14 - SaveData.lvlSpeed * 0.4;
+        player.maxHp = 100 + SaveData.lvlHp * 20; player.hp = player.maxHp;
+        player.speed = 6.5 + SaveData.lvlSpeed * 0.6; player.jumpPower = -14 - SaveData.lvlSpeed * 0.4;
         player.x = 100; player.y = GROUND_Y - player.height; player.vx = 0; player.vy = 0;
         player.weapon = 1; player.enraged = false; player.attackAnim = 0;
 
@@ -221,11 +218,8 @@
     }
 
     function gameOver() {
-        gameActive = false;
-        music.stop();
-        SaveData.souls += runSouls;
-        SaveData.save();
-
+        gameActive = false; music.stop();
+        SaveData.souls += runSouls; SaveData.save();
         document.getElementById('finalScore').innerText = score;
         document.getElementById('runSouls').innerText = runSouls;
         document.getElementById('finalDist').innerText = Math.floor(player.x / 10);
@@ -236,11 +230,8 @@
     }
 
     function revivePlayer() {
-        music.start();
-        gameActive = true;
-        player.hp = player.maxHp * 0.5;
-        player.hitFlash = 60; 
-        player.y -= 100; 
+        music.start(); gameActive = true;
+        player.hp = player.maxHp * 0.5; player.hitFlash = 60; player.y -= 100; 
         zombies = [];
         if (boss) { boss.hp = boss.maxHp; boss.state = 'flying'; }
         document.getElementById('gameOverScreen').classList.add('hidden');
@@ -265,7 +256,6 @@
         let spawnX = player.x + width + 80;
         let zType = Math.random();
         let type = zType < 0.35 ? 1 : (zType > 0.8 ? 2 : 0);
-
         let hp = type === 2 ? 5 : 1;
         let w = type === 2 ? 46 : (type === 1 ? 38 : 30);
         let h = type === 2 ? 65 : (type === 1 ? 26 : 50);
@@ -285,7 +275,6 @@
 
     function attack() {
         if (player.attackCooldown > 0 || !gameActive) return;
-
         let dmgBonus = SaveData.lvlDmg * 0.5;
         player.attackAnim = 12;
 
@@ -316,7 +305,6 @@
         if (player.attackAnim > 0) player.attackAnim--;
         if (screenFlash > 0) screenFlash--;
 
-        // Low HP Enrage Mode
         if (!player.enraged && player.hp < player.maxHp * 0.4) {
             player.enraged = true; sound.playRoar();
             if (config.shake) screenShake = 20;
@@ -346,14 +334,12 @@
 
         if (player.attackCooldown > 0) player.attackCooldown--;
         if (player.hitFlash > 0) player.hitFlash--;
-
         if (comboTimer > 0) { comboTimer--; if (comboTimer <= 0) combo = 0; }
 
         let targetCamX = player.x - width * 0.32;
         if (targetCamX < 0) targetCamX = 0;
         cameraX += (targetCamX - cameraX) * 0.12;
 
-        // Ground Collision
         player.isGrounded = false;
         if (player.y + player.height >= GROUND_Y) { player.y = GROUND_Y - player.height; player.vy = 0; player.isGrounded = true; }
         
@@ -364,7 +350,6 @@
             }
         });
 
-        // World Gen
         let lastP = platforms[platforms.length - 1];
         if (lastP.x < player.x + width + 300) {
             let nx = lastP.x + 240 + Math.random() * 200;
@@ -372,17 +357,14 @@
             if (platforms.length > 8) platforms.shift();
         }
 
-        // Projectiles Update
         for (let i = projectiles.length - 1; i >= 0; i--) {
             const pr = projectiles[i];
             pr.x += pr.vx; pr.y += pr.vy; pr.life--;
             if (pr.type === 'cleaver') { pr.vy += GRAVITY * 0.5; pr.rot += 0.3; }
 
             if (pr.life <= 0 || pr.x < cameraX - 100 || pr.x > cameraX + width + 100) { projectiles.splice(i, 1); continue; }
-
             let hit = false;
 
-            // Hit Boss
             if (boss && pr.x + pr.width > boss.x && pr.x < boss.x + boss.width && pr.y + pr.height > boss.y && pr.y < boss.y + boss.height) {
                 boss.hp -= pr.dmg; boss.hitFlash = 6; hit = true; sound.playHit(); hitStop = 3;
                 if (config.shake) screenShake = 10;
@@ -399,17 +381,14 @@
                 projectiles.splice(i, 1); continue;
             }
 
-            // Hit Zombies
             for (let j = zombies.length - 1; j >= 0; j--) {
                 const z = zombies[j];
                 if (pr.x + pr.width > z.x && pr.x < z.x + z.width && pr.y + pr.height > z.y && pr.y < z.y + z.height) {
                     z.hp -= pr.dmg; sound.playHit(); hitStop = 2;
                     if (config.shake) screenShake = 6;
-
                     if (config.gore) {
                         for(let k=0; k<12; k++) particles.push({ x: z.x+15, y: z.y+15, vx: (Math.random()-0.5)*14, vy: (Math.random()-0.5)*14, life: 1, color: Math.random()<0.3?'#4d6e36':'#880000', size: 4 });
                     }
-
                     if (z.hp <= 0) {
                         score++; runSouls += 2; combo++; comboTimer = 120;
                         sound.playDeath();
@@ -424,7 +403,6 @@
             if (hit) projectiles.splice(i, 1);
         }
 
-        // Zombie Collision
         for (let i = zombies.length - 1; i >= 0; i--) {
             const z = zombies[i];
             z.vx = (player.x < z.x) ? -z.speed : z.speed;
@@ -441,7 +419,6 @@
             if (z.x < cameraX - 400) zombies.splice(i, 1);
         }
 
-        // Boss AI
         if (boss) {
             boss.timer++; if (boss.hitFlash > 0) boss.hitFlash--;
             document.getElementById('bossHpFill').style.width = `${Math.max(0, (boss.hp / boss.maxHp) * 100)}%`;
@@ -467,10 +444,8 @@
             }
         }
 
-        // Spawner
         if (globalTime % Math.max(26, 80 - Math.floor(score/5)*4) === 0 && !boss) spawnZombie();
 
-        // Particles & Decals
         for (let i = particles.length - 1; i >= 0; i--) {
             let p = particles[i]; p.x += p.vx; p.y += p.vy; p.vy += GRAVITY * 0.3; p.life -= 0.025;
             if (p.life <= 0) particles.splice(i, 1);
@@ -481,116 +456,177 @@
         }
         if (decals.length > 40) decals.shift();
 
-        // HUD Updates
         document.getElementById('scoreTxt').innerText = `SLAUGHTERED: ${score}`;
         document.getElementById('soulsTxt').innerText = `BLOOD: 🩸 ${runSouls}`;
         document.getElementById('distTxt').innerText = `DEPTH: ${Math.floor(player.x / 10)}m`;
         document.getElementById('hpFill').style.width = `${Math.max(0, (player.hp / player.maxHp) * 100)}%`;
     }
 
-    // --- RENDERING ---
+    // --- MODERN HD RENDERING ---
     function draw() {
         ctx.save();
         if (config.shake && screenShake > 0) ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
 
-        // Fleshy Meat Dimension Sky
+        // Modern HD Sky
         let skyGrad = ctx.createLinearGradient(0, 0, 0, height);
-        skyGrad.addColorStop(0, '#0d0004'); skyGrad.addColorStop(1, '#2b000a');
+        skyGrad.addColorStop(0, '#0a0b10'); skyGrad.addColorStop(0.5, '#1c0f1a'); skyGrad.addColorStop(1, '#3d0815');
         ctx.fillStyle = skyGrad; ctx.fillRect(0, 0, width, height);
 
-        // Blood Moon
-        ctx.fillStyle = '#ff0033'; ctx.shadowColor = '#ff0000'; ctx.shadowBlur = 45;
-        ctx.beginPath(); ctx.arc(width - 140, 110, 55, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
+        // Glowing Moon with Craters
+        ctx.save();
+        ctx.shadowColor = '#ff0033'; ctx.shadowBlur = 80;
+        ctx.fillStyle = '#ff1a40';
+        ctx.beginPath(); ctx.arc(width - 160, 120, 60, 0, Math.PI*2); ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#990022';
+        ctx.beginPath(); ctx.arc(width - 175, 105, 12, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(width - 140, 135, 18, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(width - 180, 140, 8, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
 
         ctx.save();
         ctx.translate(-cameraX, 0);
 
-        // Visceral Ground
-        ctx.fillStyle = '#120005'; ctx.fillRect(cameraX - 100, GROUND_Y, width + 200, height - GROUND_Y);
-        ctx.fillStyle = '#660011'; ctx.fillRect(cameraX - 100, GROUND_Y, width + 200, 6);
+        // Ground with Glowing Edge
+        ctx.fillStyle = '#0a0408'; ctx.fillRect(cameraX - 100, GROUND_Y, width + 200, height - GROUND_Y);
+        ctx.fillStyle = '#ff0033'; ctx.shadowColor = '#ff0033'; ctx.shadowBlur = 15;
+        ctx.fillRect(cameraX - 100, GROUND_Y, width + 200, 4); ctx.shadowBlur = 0;
 
-        // Platforms
+        // Platforms (Rounded with Glowing Edges)
         platforms.forEach(p => {
-            ctx.fillStyle = '#3a0510'; ctx.fillRect(p.x, p.y, p.w, p.h);
-            ctx.fillStyle = '#880018'; ctx.fillRect(p.x, p.y, p.w, 4);
+            ctx.fillStyle = '#1a0d15';
+            ctx.beginPath(); ctx.roundRect(p.x, p.y, p.w, p.h, 8); ctx.fill();
+            ctx.strokeStyle = '#ff0033'; ctx.lineWidth = 2; ctx.shadowColor = '#ff0033'; ctx.shadowBlur = 10;
+            ctx.stroke(); ctx.shadowBlur = 0;
         });
 
         // Decals (Blood & Guts)
         decals.forEach(d => {
-            ctx.fillStyle = 'rgba(136, 0, 0, 0.7)';
+            ctx.fillStyle = 'rgba(136, 0, 0, 0.6)';
             ctx.beginPath(); ctx.ellipse(d.x, d.y, 16, 5, 0, 0, Math.PI*2); ctx.fill();
         });
 
-        // Projectiles
+        // Projectiles with Glow
         projectiles.forEach(pr => {
-            ctx.fillStyle = pr.type === 'cleaver' ? '#e0e0e0' : (pr.type === 'slash' ? '#ff0033' : '#ffcc00');
-            ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 12;
-            ctx.fillRect(pr.x, pr.y, pr.width, pr.height); ctx.shadowBlur = 0;
+            ctx.save();
+            ctx.shadowColor = pr.type === 'cleaver' ? '#ffffff' : (pr.type === 'slash' ? '#ff0033' : '#ffcc00');
+            ctx.shadowBlur = 15; ctx.fillStyle = ctx.shadowColor;
+            if (pr.type === 'cleaver') {
+                ctx.translate(pr.x + 16, pr.y + 16); ctx.rotate(pr.rot);
+                ctx.beginPath(); ctx.arc(0, 0, 16, 0, Math.PI*2); ctx.fill();
+            } else {
+                ctx.beginPath(); ctx.roundRect(pr.x, pr.y, pr.width, pr.height, 5); ctx.fill();
+            }
+            ctx.restore();
         });
 
-        // Monsters
+        // Modern Zombies (Rounded, Shaded, Glowing Eyes)
         zombies.forEach(z => {
-            ctx.fillStyle = z.type === 2 ? '#4a121a' : (z.type === 1 ? '#2b471c' : '#3d1c24');
-            ctx.fillRect(z.x, z.y, z.width, z.height);
-            ctx.fillStyle = '#ff0000'; ctx.fillRect(z.x + (z.vx < 0 ? 4 : z.width - 8), z.y + 8, 4, 3);
+            ctx.save();
+            // Drop Shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.beginPath(); ctx.ellipse(z.x + z.width/2, GROUND_Y - 5, z.width/2, 6, 0, 0, Math.PI*2); ctx.fill();
+            
+            // Zombie Body
+            let bodyGrad = ctx.createLinearGradient(z.x, z.y, z.x, z.y + z.height);
+            bodyGrad.addColorStop(0, z.type === 2 ? '#5a1a24' : '#2b471c');
+            bodyGrad.addColorStop(1, '#120508');
+            ctx.fillStyle = bodyGrad;
+            ctx.beginPath(); ctx.roundRect(z.x, z.y, z.width, z.height, 12); ctx.fill();
+            
+            // Glowing Eyes
+            ctx.fillStyle = '#ff0000'; ctx.shadowColor = '#ff0000'; ctx.shadowBlur = 10;
+            ctx.beginPath(); ctx.arc(z.x + (z.vx < 0 ? 8 : z.width - 8), z.y + 12, 4, 0, Math.PI*2); ctx.fill();
+            ctx.restore();
         });
 
-        // Boss (Behemoth)
+        // Modern Boss (Demonic Floating Skull)
         if (boss) {
-            ctx.fillStyle = boss.hitFlash > 0 ? '#ffffff' : '#660000';
-            ctx.fillRect(boss.x, boss.y, boss.width, boss.height);
-            ctx.fillStyle = '#ffcc00'; ctx.fillRect(boss.x + 20, boss.y + 20, 14, 14);
+            ctx.save();
+            ctx.translate(boss.x + boss.width/2, boss.y + boss.height/2);
+            let pulse = Math.sin(globalTime * 0.1) * 0.1 + 1;
+            ctx.scale(pulse, pulse);
+            
+            // Boss Aura
+            ctx.shadowColor = '#ff0033'; ctx.shadowBlur = 50;
+            ctx.fillStyle = boss.hitFlash > 0 ? '#ffffff' : '#330008';
+            ctx.beginPath(); ctx.arc(0, 0, 60, 0, Math.PI*2); ctx.fill();
+            
+            // Boss Eyes
+            ctx.shadowBlur = 20; ctx.fillStyle = '#ffcc00';
+            ctx.beginPath(); ctx.arc(-20, -10, 10, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(20, -10, 10, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(0, 20, 10, 0, Math.PI*2); ctx.fill();
+            
+            // Boss Horns
+            ctx.fillStyle = '#110004'; ctx.shadowBlur = 0;
+            ctx.beginPath(); ctx.moveTo(-40, -40); ctx.lineTo(-70, -90); ctx.lineTo(-20, -50); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(40, -40); ctx.lineTo(70, -90); ctx.lineTo(20, -50); ctx.fill();
+            ctx.restore();
         }
 
-        // Masked Berserker Player
+        // Modern Hero (Armored, Flowing Cape, Glowing Sword)
         ctx.save();
-        if (player.hitFlash > 0) ctx.globalAlpha = 0.5;
+        // Drop Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.8)';
+        ctx.beginPath(); ctx.ellipse(player.x + player.width/2, GROUND_Y - 5, player.width/2, 6, 0, 0, Math.PI*2); ctx.fill();
+
+        // Flowing Cape
+        let capeWave = Math.sin(globalTime * 0.15) * 10;
+        ctx.fillStyle = '#880011';
+        ctx.beginPath();
+        ctx.moveTo(player.x + 5, player.y + 15);
+        ctx.quadraticCurveTo(player.x - 30 - (player.facing*10), player.y + 30 + capeWave, player.x - 10, player.y + 60);
+        ctx.lineTo(player.x + 20, player.y + 60);
+        ctx.fill();
+
+        // Armor Body
+        let bodyGrad = ctx.createLinearGradient(player.x, player.y, player.x, player.y + player.height);
+        bodyGrad.addColorStop(0, '#4a6b8c'); bodyGrad.addColorStop(1, '#1a2a3a');
+        ctx.fillStyle = bodyGrad;
+        ctx.beginPath(); ctx.roundRect(player.x, player.y + 12, player.width, 42, 8); ctx.fill();
         
-        // Body & Vest
-        ctx.fillStyle = '#3a5370'; ctx.fillRect(player.x, player.y + 12, player.width, 26);
-        ctx.fillStyle = '#d9a77c'; ctx.fillRect(player.x - 4, player.y + 14, 6, 20); ctx.fillRect(player.x + player.width, player.y + 14, 6, 20);
+        // Helmet
+        ctx.fillStyle = '#8ca8c4';
+        ctx.beginPath(); ctx.arc(player.x + player.width/2, player.y + 10, 14, 0, Math.PI*2); ctx.fill();
+        // Visor
+        ctx.fillStyle = '#00ffff'; ctx.shadowColor = '#00ffff'; ctx.shadowBlur = 10;
+        ctx.fillRect(player.x + (player.facing === 1 ? 18 : 6), player.y + 6, 10, 4);
+        ctx.shadowBlur = 0;
 
-        // Skull Mask
-        ctx.fillStyle = '#e6e6e6'; ctx.beginPath(); ctx.arc(player.x + player.width/2, player.y + 10, 12, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#111'; ctx.fillRect(player.x + (player.facing === 1 ? 18 : 8), player.y + 8, 4, 4);
-
-        // Pants
-        ctx.fillStyle = '#222'; ctx.fillRect(player.x + 4, player.y + 38, 10, 16); ctx.fillRect(player.x + 20, player.y + 38, 10, 16);
-
+        // Weapon Swing Animation
+        if (player.attackAnim > 0) {
+            ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+            ctx.shadowColor = '#00ffff'; ctx.shadowBlur = 20;
+            ctx.beginPath();
+            ctx.arc(player.x + (player.facing === 1 ? 25 : 5), player.y + 25, 35, -Math.PI/2, Math.PI/2);
+            ctx.stroke(); ctx.shadowBlur = 0;
+        }
         ctx.restore();
 
         // Particles & Floating Text
         particles.forEach(p => {
             ctx.fillStyle = p.color; ctx.globalAlpha = Math.max(0, p.life);
-            ctx.fillRect(p.x, p.y, p.size, p.size);
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
         });
         ctx.globalAlpha = 1.0;
 
         floatingTexts.forEach(ft => {
             ctx.fillStyle = ft.color; ctx.font = `bold ${ft.size}px 'Impact', sans-serif`;
-            ctx.globalAlpha = Math.max(0, ft.life);
+            ctx.globalAlpha = Math.max(0, ft.life); ctx.shadowColor = ft.color; ctx.shadowBlur = 10;
             ctx.fillText(ft.txt, ft.x, ft.y);
         });
-        ctx.globalAlpha = 1.0;
+        ctx.globalAlpha = 1.0; ctx.shadowBlur = 0;
 
         ctx.restore();
         ctx.restore();
 
-        // Muzzle Flash Overlay
-        if (screenFlash > 0) {
-            ctx.fillStyle = `rgba(255, 200, 0, ${screenFlash / 10})`;
-            ctx.fillRect(0, 0, width, height);
-        }
-        // Damage Flash Overlay
-        if (player.hitFlash > 0) {
-            ctx.fillStyle = `rgba(255, 0, 0, ${player.hitFlash / 40})`;
-            ctx.fillRect(0, 0, width, height);
-        }
+        // Screen Effects
+        if (screenFlash > 0) { ctx.fillStyle = `rgba(255, 200, 0, ${screenFlash / 10})`; ctx.fillRect(0, 0, width, height); }
+        if (player.hitFlash > 0) { ctx.fillStyle = `rgba(255, 0, 0, ${player.hitFlash / 40})`; ctx.fillRect(0, 0, width, height); }
     }
 
-    function gameLoop() {
-        update(); draw(); requestAnimationFrame(gameLoop);
-    }
+    function gameLoop() { update(); draw(); requestAnimationFrame(gameLoop); }
 
     // --- INPUT LISTENERS ---
     window.addEventListener('keydown', e => {
@@ -619,10 +655,8 @@
         joystickActive = true;
         joystickOrigin = { x: t.clientX, y: t.clientY };
         joystickCurrent = { x: t.clientX, y: t.clientY };
-        joystickVisual.style.left = `${t.clientX}px`;
-        joystickVisual.style.top = `${t.clientY}px`;
-        joystickKnob.style.transform = `translate(-50%, -50%)`;
-        joystickVisual.style.display = 'block';
+        joystickVisual.style.left = `${t.clientX}px`; joystickVisual.style.top = `${t.clientY}px`;
+        joystickKnob.style.transform = `translate(-50%, -50%)`; joystickVisual.style.display = 'block';
     }, { passive: false });
 
     touchZoneLeft.addEventListener('touchmove', e => {
@@ -640,12 +674,12 @@
     touchZoneLeft.addEventListener('touchend', endJoystick);
     touchZoneLeft.addEventListener('touchcancel', endJoystick);
 
-    // Right Action Buttons
+    // Action Buttons
     document.getElementById('btnAttack').addEventListener('touchstart', e => { e.preventDefault(); attack(); });
     document.getElementById('btnJump').addEventListener('touchstart', e => { e.preventDefault(); keys.jumpPressed = true; });
     document.getElementById('btnSwap').addEventListener('touchstart', e => { e.preventDefault(); player.weapon = (player.weapon % 3) + 1; updateWeaponUI(); });
 
-    // Menu Controls Wireup
+    // Menu Controls
     document.getElementById('startBtn').addEventListener('click', resetGame);
     document.getElementById('retryBtn').addEventListener('click', resetGame);
     document.getElementById('shopBtn').addEventListener('click', () => { document.getElementById('startScreen').classList.add('hidden'); document.getElementById('shopScreen').classList.remove('hidden'); });
@@ -673,4 +707,5 @@
         if (SaveData.souls >= cost) { SaveData.souls -= cost; SaveData.lvlSpeed++; SaveData.save(); }
     });
 
+    // Start Engine
     gameLoop();
