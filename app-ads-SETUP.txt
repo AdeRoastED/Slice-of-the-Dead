@@ -1,0 +1,4 @@
+Not a live app-ads.txt file.
+After AdMob provides your own exact publisher line, create app-ads.txt in the root of your AdeRoastED.github.io repository. Do not use a placeholder publisher ID.
+Check https://aderoasted.github.io/app-ads.txt once published.
+Official instructions: https://support.google.com/admob/answer/9363762
